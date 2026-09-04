@@ -1,0 +1,79 @@
+name: Apply TT V17 Zalo Tab JPG
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch JPG Zalo for current tab
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          start=s.find('function jpgExportWorkshop(){')
+          if start < 0:
+              raise SystemExit('Không tìm thấy jpgExportWorkshop')
+          end=s.find('function downloadJpg(', start)
+          if end < 0:
+              raise SystemExit('Không tìm thấy downloadJpg')
+          end2=s.find('}', end)
+          # downloadJpg is one compact function; include its closing brace
+          end2=end2+1
+          fn=r'''function jpgExportWorkshop(){
+            const content=document.getElementById('content');
+            if(!content)return toast('Không tìm thấy nội dung tab');
+            const titleEl=content.querySelector('.title');
+            let title=(titleEl?titleEl.textContent:'BẢNG CHẤM CÔNG').replace(/\s+/g,' ').trim();
+            if(!title)title='BẢNG CHẤM CÔNG';
+            const ym=month||new Date().toISOString().slice(0,7);
+            const w=(data.workshops||[])[active];
+            const name=(view==='workshop'&&w?w.name:(view==='summary'?'TỔNG LƯƠNG':'TẠM ỨNG'));
+            const safe=String(name).replace(/[^a-zA-Z0-9À-ỹ _-]/g,'_').replace(/\s+/g,'_');
+            const fileName='TT_'+safe+'_'+ym+'.jpg';
+            const run=()=>{
+              const target=content.cloneNode(true);
+              target.style.cssText='position:fixed;left:-100000px;top:0;width:1400px;background:#fff;padding:18px;color:#17212b;font-family:Arial,sans-serif;z-index:-1;';
+              target.querySelectorAll('button,input,select,.noPrint').forEach(e=>e.remove());
+              document.body.appendChild(target);
+              html2canvas(target,{backgroundColor:'#fff',scale:2,useCORS:true,logging:false,windowWidth:1400}).then(cvs=>{
+                document.body.removeChild(target);
+                cvs.toBlob(blob=>{
+                  if(!blob)return toast('Không tạo được ảnh');
+                  const file=new File([blob],fileName,{type:'image/jpeg'});
+                  const text=title+'\n'+name+'\nTháng '+ym;
+                  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+                    navigator.share({title,text,files:[file]}).then(()=>toast('Đã mở chia sẻ — chọn Zalo')).catch(e=>{if(e.name!=='AbortError')downloadJpg(blob,fileName)})
+                  }else downloadJpg(blob,fileName);
+                },'image/jpeg',0.94);
+              }).catch(e=>{if(document.body.contains(target))document.body.removeChild(target);toast('Lỗi tạo ảnh JPG')});
+            };
+            if(window.html2canvas)run();
+            else{
+              const sc=document.createElement('script');
+              sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+              sc.onload=run;
+              sc.onerror=()=>toast('Không tải được bộ tạo ảnh');
+              document.head.appendChild(sc);
+            }
+          }
+          function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('Đã tạo ảnh JPG');}
+          '''
+          s=s[:start]+fn+s[end2:]
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'V17: gui anh JPG dung tab dang mo qua Zalo'
+          git push
