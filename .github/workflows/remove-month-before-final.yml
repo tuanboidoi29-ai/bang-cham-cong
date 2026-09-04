@@ -1,0 +1,42 @@
+name: Remove TT Tháng trước Final
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  remove:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove every Tháng trước button
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+
+          # Remove HTML buttons whose visible text or onclick is the old feature.
+          s=re.sub(r'<button\\b[^>]*(?:onclick\\s*=\\s*["\'][^"\']*monthHistory\\(\\)[^"\']*["\']|>[^<]*Tháng\\s+trước[^<]*<)[^>]*>.*?</button>', '', s, flags=re.I|re.S)
+          s=re.sub(r'<button\\b[^>]*>\\s*[^<]*📅\\s*Tháng\\s+trước\\s*</button>', '', s, flags=re.I|re.S)
+
+          # Remove any JS string that creates the old button.
+          s=re.sub(r"[^\\n]*monthHistory\\(\\)[^\\n]*Tháng\\s+trước[^\\n]*", '', s, flags=re.I)
+          s=s.replace('📅 Tháng trước','')
+
+          # Disable/remove the obsolete function itself if it remains.
+          s=re.sub(r'function\\s+monthHistory\\s*\\(\\)\\s*\\{.*?\\n\\}', '', s, flags=re.S)
+
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit cleaned index
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then echo 'Không còn nút Tháng trước trong index.html'; exit 0; fi
+          git commit -m 'Xóa hoàn toàn nút và chức năng Tháng trước'
+          git push
