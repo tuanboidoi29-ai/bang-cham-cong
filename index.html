@@ -152,6 +152,7 @@ function jpgExportWorkshop(){
 function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('Đã tạo ảnh JPG');}
 
 
+
 </script>
 <script>
 /* TT V12 - TẠM ỨNG LƯƠNG */
