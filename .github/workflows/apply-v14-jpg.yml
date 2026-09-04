@@ -1,0 +1,58 @@
+name: Apply TT V14 JPG Zalo
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch JPG export
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('📤 Gửi bảng công Zalo','📸 Xuất JPG & Gửi Zalo')
+          marker='</script>'
+          fn=r'''function jpgExportWorkshop(){
+            let w=data.workshops[active]; if(!w)return toast('Chưa chọn xưởng');
+            let ym=month, rows=[];
+            for(let d=1;d<=31;d++){
+              let date=ym+'-'+pad(d);
+              let found=[];
+              Object.keys(data.records||{}).forEach(k=>{let a=k.split('|'),r=data.records[k]||{};if(a[0]===w.id&&a[2]===date)found.push([a[1],r])});
+              found.forEach(([n,r])=>rows.push({n,date,r}));
+            }
+            if(!rows.length)return toast('Xưởng này chưa có dữ liệu tháng '+ym);
+            let cvs=document.createElement('canvas'),ctx=cvs.getContext('2d');
+            let W=1800, line=54, H=190+line*(rows.length+4); cvs.width=W;cvs.height=H;
+            ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.fillStyle='#17212b';
+            ctx.font='bold 36px Arial';ctx.fillText('BẢNG CHẤM CÔNG - '+w.name,50,55);
+            ctx.font='24px Arial';ctx.fillText('Tháng '+ym,50,95);
+            let heads=['Họ tên','Ngày','Loại','Giờ vào','Giờ ra','Lương ngày','TC giờ','Tiền TC'];
+            let widths=[300,150,130,180,180,250,160,250];let x=30,y=130;
+            ctx.font='bold 22px Arial';ctx.fillStyle='#edf3fa';ctx.fillRect(x,y,W-60,line);ctx.fillStyle='#17212b';
+            heads.forEach((h,i)=>{ctx.fillText(h,x+10,y+35);x+=widths[i]});
+            y+=line;ctx.font='21px Arial';let total=0,ot=0;
+            rows.forEach(o=>{x=30;let r=o.r,day=Number(r.wage||0),oh=otHours(r),om=otMoney(r);total+=day;ot+=om;let vals=[o.n,o.date,r.type==='congtrinh'?'CT':'LX',r.in||'',r.out||'',money(day),oh.toFixed(2),money(om)];vals.forEach((v,i)=>{ctx.strokeStyle='#d9e1ea';ctx.strokeRect(x,y,widths[i],line);ctx.fillStyle='#17212b';ctx.fillText(String(v),x+8,y+34);x+=widths[i]});y+=line});
+            ctx.font='bold 24px Arial';ctx.fillText('TỔNG LƯƠNG: '+money(total)+'    TỔNG TĂNG CA: '+money(ot)+'    TỔNG CỘNG: '+money(total+ot),40,y+45);
+            cvs.toBlob(blob=>{let file=new File([blob],'Bang_cham_cong_'+w.name.replace(/[^a-zA-Z0-9À-ỹ _-]/g,'_')+'_'+ym+'.jpg',{type:'image/jpeg'});let text='BẢNG CHẤM CÔNG - '+w.name+' - THÁNG '+ym+'\nTổng lương: '+money(total)+'\nTăng ca: '+money(ot)+'\nTổng cộng: '+money(total+ot);if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({title:'Bảng chấm công '+w.name,text,files:[file]}).then(()=>toast('Đã mở chia sẻ — chọn Zalo')).catch(e=>{if(e.name!=='AbortError')downloadJpg(blob,file.name)})}else downloadJpg(blob,file.name)},'image/jpeg',0.94);
+          }
+          function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('Đã tạo ảnh JPG, hãy mở Zalo để gửi')}
+          '''
+          if 'function jpgExportWorkshop()' not in s:s=s.replace(marker,fn+marker,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html .github/workflows/apply-v14-jpg.yml
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'V14: xuat bang cong JPG gui Zalo'
+          git push
