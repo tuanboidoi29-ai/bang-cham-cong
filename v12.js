@@ -30,6 +30,14 @@
     return {label:'TỔNG THỰC NHẬN',value:n};
   }
 
+  function hideBrokenMonthBefore(){
+    document.querySelectorAll('button').forEach(function(b){
+      const text=(b.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+      const click=(b.getAttribute('onclick')||'').toLowerCase();
+      if(text.includes('tháng trước') || click.includes('monthhistory')) b.remove();
+    });
+  }
+
   function addTab(){
     const tabs=document.getElementById('tabs'); if(!tabs)return;
     if(!tabs.querySelector('[data-advance-tab]')){
@@ -83,9 +91,14 @@
   const originalRender=window.render;
   window.render=function(){
     originalRender();
+    hideBrokenMonthBefore();
     addTab();
+    hideBrokenMonthBefore();
     if(view==='advance')renderAdvance();
     if(view==='summary')renderSummaryV12();
+    hideBrokenMonthBefore();
   };
-  setTimeout(function(){addTab();if(view==='summary')renderSummaryV12();},0);
+  const monthObserver=new MutationObserver(function(){hideBrokenMonthBefore();});
+  if(document.body) monthObserver.observe(document.body,{childList:true,subtree:true});
+  setTimeout(function(){hideBrokenMonthBefore();addTab();if(view==='summary')renderSummaryV12();hideBrokenMonthBefore();},0);
 })();
