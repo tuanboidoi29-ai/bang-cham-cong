@@ -1,0 +1,84 @@
+name: Apply TT V13 Zalo
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch Zalo export
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if 'function zaloExportWorkshop()' in s:
+              print('V13 already installed')
+              raise SystemExit(0)
+          old='<div class="top noPrint"><h2>🕘 TT - BẢNG CHẤM CÔNG</h2><b id="clock"></b></div>'
+          new='<div class="top noPrint"><h2>🕘 TT - BẢNG CHẤM CÔNG</h2><div class="controls"><button class="green" onclick="zaloExportWorkshop()">📤 Gửi bảng công Zalo</button><b id="clock"></b></div></div>'
+          if old not in s:
+              raise SystemExit('TOP_MARKER_NOT_FOUND')
+          s=s.replace(old,new,1)
+          marker='</script>'
+          fn=r'''function zaloExportWorkshop(){
+            let w=data.workshops[active];
+            if(!w)return toast('Chưa chọn xưởng');
+            let ym=month;
+            let names=[];
+            Object.keys(data.records||{}).forEach(k=>{
+              let r=data.records[k]||{};
+              if(k.startsWith(w.id+'|') && r.date && r.date.slice(0,7)===ym && r.name && !names.includes(r.name)) names.push(r.name);
+            });
+            if(!names.length){
+              Object.keys(data.records||{}).forEach(k=>{
+                let a=k.split('|'); let r=data.records[k]||{};
+                if(a[0]===w.id && a[2] && a[2].slice(0,7)===ym){let n=a[1];if(n&&!names.includes(n))names.push(n)}
+              });
+            }
+            names.sort((a,b)=>a.localeCompare(b,'vi'));
+            let rows=[['BẢNG CHẤM CÔNG',w.name],['Tháng',ym],[],['Họ tên','Ngày','Loại','Giờ vào','Giờ ra','Lương ngày','TC giờ','Tiền TC']];
+            let total=0,ot=0;
+            names.forEach(n=>{
+              let list=[];
+              Object.keys(data.records||{}).forEach(k=>{
+                let a=k.split('|'); let r=data.records[k]||{};
+                if(a[0]===w.id&&a[1]===n&&a[2]&&a[2].slice(0,7)===ym)list.push([a[2],r]);
+              });
+              list.sort((a,b)=>a[0].localeCompare(b[0]));
+              list.forEach(([d,r])=>{
+                let day=Number(r.wage||0), oh=otHours(r), om=otMoney(r); total+=day;ot+=om;
+                rows.push([n,d,r.type==='congtrinh'?'CT':'LX',r.in||'',r.out||'',day,oh,om]);
+              });
+            });
+            rows.push([]); rows.push(['TỔNG','','','','',total,otHoursTotal(rows),ot]);
+            let csv='\\ufeff'+rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\\r\\n');
+            let file=new File([csv],'Bang_cham_cong_'+w.name.replace(/[^a-zA-Z0-9À-ỹ _-]/g,'_')+'_'+ym+'.csv',{type:'text/csv;charset=utf-8'});
+            let text='BẢNG CHẤM CÔNG - '+w.name+' - THÁNG '+ym+'\\nTổng lương: '+money(total)+'\\nTổng tiền tăng ca: '+money(ot)+'\\nTổng cộng: '+money(total+ot); 
+            if(navigator.share){
+              navigator.share({title:'Bảng chấm công '+w.name,text:text,files:[file]}).then(()=>toast('Đã mở bảng chia sẻ — chọn Zalo')).catch(e=>{if(e.name!=='AbortError')fallbackZalo(text,csv)});
+            }else fallbackZalo(text,csv);
+          }
+          function otHoursTotal(rows){return rows.slice(4).reduce((sum,r)=>sum+(Number(r[6])||0),0)}
+          function fallbackZalo(text,csv){
+            try{navigator.clipboard.writeText(text+'\\n\\n'+csv).then(()=>toast('Đã sao chép bảng công. Mở Zalo và dán để gửi.')).catch(()=>toast('Không mở được chia sẻ; hãy dùng chức năng Chia sẻ của trình duyệt.'))}
+            catch(e){toast('Không mở được chia sẻ Zalo trên thiết bị này')}
+          }
+          '''
+          s=s.replace(marker,fn+marker,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'V13: xuat bang cong qua Zalo'
+          git push
