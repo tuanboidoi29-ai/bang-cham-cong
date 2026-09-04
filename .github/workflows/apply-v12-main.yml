@@ -1,0 +1,29 @@
+name: Apply TT V12 Main
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch app
+        shell: bash
+        run: |
+          python - <<'PY'
+          import gzip,base64
+          b='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'
+          open('/tmp/patch.py','wb').write(gzip.decompress(base64.b64decode(b)))
+          PY
+          python /tmp/patch.py
+      - name: Commit patched app
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'V12: them tam ung va tru tam ung'
+          git push
