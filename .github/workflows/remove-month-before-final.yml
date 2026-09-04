@@ -11,36 +11,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Remove old feature from index
+      - name: Remove old month-before feature
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
-          # Remove every HTML button containing the old label or handler.
-          s=re.sub(r'<button\b[^>]*(?:onclick\s*=\s*["\'][^"\']*monthHistory\(\)[^"\']*["\']|[^>]*>[^<]*Tháng\s+trước[^<]*</button>).*?</button>', '', s, flags=re.I|re.S)
+          # The old V15 feature left empty purple buttons in the source.
+          s=re.sub(r'<button\s+class=["\']purple["\']\s+onclick=["\']monthHistory\(\)["\']\s*>\s*</button>', '', s, flags=re.I)
+          # Remove any remaining visible version of the old button.
+          s=re.sub(r'<button\b[^>]*>\s*[^<]*📅\s*Tháng\s+trước\s*</button>', '', s, flags=re.I|re.S)
           s=re.sub(r'<button\b[^>]*>\s*[^<]*Tháng\s+trước\s*</button>', '', s, flags=re.I|re.S)
-          # Remove injected button expressions from JS, while keeping the rest of each function.
-          s=re.sub(r"\.replace\([^\n;]*Tháng\s+trước[^\n;]*\)", '', s, flags=re.I)
-          s=re.sub(r"\.insertAdjacentHTML\([^\n;]*Tháng\s+trước[^\n;]*\)", '', s, flags=re.I)
-          s=s.replace('📅 Tháng trước','')
-          # Remove obsolete monthHistory function if present.
+          # Remove obsolete V15 function if it exists as a standalone function.
           s=re.sub(r'function\s+monthHistory\s*\(\)\s*\{.*?\n\s*\}', '', s, flags=re.S)
-          # Permanent guard in index.html itself, independent of external JS/cache.
-          guard='''<script id="tt-remove-month-before">\n(function(){\n  function clean(){\n    document.querySelectorAll('button').forEach(function(b){\n      var t=(b.textContent||'').replace(/\\s+/g,' ').trim().toLowerCase();\n      var o=(b.getAttribute('onclick')||'').toLowerCase();\n      if(t.indexOf('tháng trước')!==-1 || o.indexOf('monthhistory')!==-1) b.remove();\n    });\n  }\n  clean();\n  new MutationObserver(clean).observe(document.documentElement,{childList:true,subtree:true});\n})();\n</script>'''
-          s=re.sub(r'<script id="tt-remove-month-before">.*?</script>', '', s, flags=re.I|re.S)
-          if '</body>' in s:
-            s=s.replace('</body>',guard+'\n</body>',1)
           p.write_text(s,encoding='utf-8')
           PY
-      - name: Disable old V15 workflow
-        run: rm -f .github/workflows/apply-v15-month-history.yml
       - name: Commit cleanup
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+users.noreply.github.com'
-          git add index.html .github/workflows/apply-v15-month-history.yml
-          if git diff --cached --quiet; then echo 'Không có thay đổi'; exit 0; fi
-          git commit -m 'Xóa hoàn toàn Tháng trước'
+          git add index.html
+          if git diff --cached --quiet; then echo 'Đã sạch'; exit 0; fi
+          git commit -m 'Xóa hẳn hai nút Tháng trước'
           git push
