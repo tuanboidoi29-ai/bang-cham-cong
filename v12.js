@@ -1,6 +1,7 @@
 (function(){
   const ADV='TT_CC_V12_ADVANCE';
   let advances=[];
+  let summaryFrom=month,summaryTo=month;
   try{ advances=JSON.parse(localStorage.getItem(ADV)||'[]'); if(!Array.isArray(advances)) advances=[]; }catch(e){ advances=[]; }
   function saveAdv(){localStorage.setItem(ADV,JSON.stringify(advances));}
   function fmt(n){return Number(n||0).toLocaleString('vi-VN')+' đ'}
@@ -29,6 +30,34 @@
     if(n<0)return {label:'TRẢ LẠI',value:Math.abs(n)};
     return {label:'TỔNG THỰC NHẬN',value:n};
   }
+  function monthList(from,to){
+    if(!from||!to)return [month];
+    if(from>to){const t=from;from=to;to=t;}
+    const out=[];
+    let y=Number(from.slice(0,4)),m=Number(from.slice(5,7));
+    const ey=Number(to.slice(0,4)),em=Number(to.slice(5,7));
+    let guard=0;
+    while((y<ey||(y===ey&&m<=em))&&guard<120){
+      out.push(String(y)+'-'+String(m).padStart(2,'0'));
+      m++;if(m>12){m=1;y++;}guard++;
+    }
+    return out.length?out:[month];
+  }
+  function salaryDataRange(w,from,to){
+    const people={};
+    monthList(from,to).forEach(m=>{
+      salaryData(w,m).forEach(p=>{
+        if(!people[p.name])people[p.name]={name:p.name,days:0,pay:0,ot:0,total:0};
+        people[p.name].days+=Number(p.days||0);
+        people[p.name].pay+=Number(p.pay||0);
+        people[p.name].ot+=Number(p.ot||0);
+        people[p.name].total+=Number(p.total||0);
+      });
+    });
+    return Object.values(people);
+  }
+  function advTotalRange(wid,from,to){return monthList(from,to).reduce((s,m)=>s+advTotal(wid,m),0)}
+  function advPersonRange(wid,name,from,to){return monthList(from,to).reduce((s,m)=>s+allAdvForPerson(wid,name,m),0)}
 
   function hideBrokenMonthBefore(){
     document.querySelectorAll('button').forEach(function(b){
@@ -78,14 +107,18 @@
 
   function renderSummaryV12(){
     const c=document.getElementById('content'); if(!c)return;
-    const rows=data.workshops.map(w=>{const salary=totalSalary(w,month),adv=advTotal(w.id,month),sd=salaryData(w,month),people=sd.length,days=sd.reduce((s,x)=>s+x.days,0);return {w,salary,adv,net:salary-adv,people,days}});
+    if(!summaryFrom)summaryFrom=month;if(!summaryTo)summaryTo=month;
+    const months=monthList(summaryFrom,summaryTo);
+    const rows=data.workshops.map(w=>{const sd=salaryDataRange(w,summaryFrom,summaryTo),salary=sd.reduce((s,x)=>s+x.total,0),adv=advTotalRange(w.id,summaryFrom,summaryTo),people=sd.length,days=sd.reduce((s,x)=>s+x.days,0);return {w,sd,salary,adv,net:salary-adv,people,days}});
     const grand=rows.reduce((s,x)=>s+x.salary,0),ga=rows.reduce((s,x)=>s+x.adv,0),gn=rows.reduce((s,x)=>s+x.net,0),gs=payStatus(gn);
-    c.innerHTML=`<div class="card summaryBox"><div class="bar"><div><div class="title">💰 TỔNG LƯƠNG</div><div class="hint">Tự động đối chiếu tổng lương với toàn bộ tiền tạm ứng.</div></div><div class="controls"><label>Tháng</label><input id="sumM" type="month" value="${month}"></div></div>
-      <div class="stats"><div class="stat">Tổng lương: <b>${fmt(grand)}</b></div><div class="stat">Tạm ứng: <b>${fmt(ga)}</b></div><div class="stat summaryTotal">${gs.label}: ${fmt(gs.value)}</div></div>
+    const rangeLabel=summaryFrom===summaryTo?summaryFrom:(summaryFrom+' → '+summaryTo);
+    c.innerHTML=`<div class="card summaryBox"><div class="bar"><div><div class="title">💰 TỔNG LƯƠNG</div><div class="hint">Kiểm tra tổng lương theo 1 tháng hoặc nhiều tháng liên tiếp.</div></div><div class="controls"><label>Từ tháng</label><input id="sumFrom" type="month" value="${summaryFrom}"><label>Đến tháng</label><input id="sumTo" type="month" value="${summaryTo}"></div></div>
+      <div class="stats"><div class="stat">Khoảng kiểm tra: <b>${rangeLabel}</b></div><div class="stat">Số tháng: <b>${months.length}</b></div><div class="stat">Tổng lương: <b>${fmt(grand)}</b></div><div class="stat">Tạm ứng: <b>${fmt(ga)}</b></div><div class="stat summaryTotal">${gs.label}: ${fmt(gs.value)}</div></div>
       <div class="tableWrap"><table><thead><tr><th>Xưởng</th><th>Số người</th><th>Ngày công</th><th>Tổng lương</th><th>Tạm ứng</th><th>THỰC NHẬN / TRẢ LẠI</th></tr></thead><tbody>${rows.map(x=>{const ps=payStatus(x.net);return `<tr><td class="left"><b>${esc2(x.w.name)}</b></td><td>${x.people}</td><td>${x.days}</td><td class="money">${fmt(x.salary)}</td><td>${fmt(x.adv)}</td><td class="summaryTotal">${ps.label}: ${fmt(ps.value)}</td></tr>`}).join('')}<tr><th>TỔNG</th><th>${rows.reduce((s,x)=>s+x.people,0)}</th><th>${rows.reduce((s,x)=>s+x.days,0)}</th><th>${fmt(grand)}</th><th>${fmt(ga)}</th><th class="summaryTotal">${gs.label}: ${fmt(gs.value)}</th></tr></tbody></table></div>
     </div>
-    <div class="card"><div class="title">👤 Chi tiết theo người</div><div class="tableWrap"><table><thead><tr><th>Xưởng</th><th>Người</th><th>Ngày công</th><th>Lương</th><th>Tạm ứng</th><th>THỰC NHẬN / TRẢ LẠI</th></tr></thead><tbody>${rows.flatMap(x=>salaryData(x.w,month).map(p=>{const a=allAdvForPerson(x.w.id,p.name,month),ps=payStatus(p.total-a);return `<tr><td>${esc2(x.w.name)}</td><td class="left">${esc2(p.name)}</td><td>${p.days}</td><td>${fmt(p.total)}</td><td>${fmt(a)}</td><td class="summaryTotal">${ps.label}: ${fmt(ps.value)}</td></tr>`})).join('')||'<tr><td colspan="6" class="empty">Chưa có dữ liệu chấm công.</td></tr>'}</tbody></table></div></div>`;
-    document.getElementById('sumM').onchange=function(){month=this.value;render();};
+    <div class="card"><div class="title">👤 Chi tiết theo người — ${rangeLabel}</div><div class="tableWrap"><table><thead><tr><th>Xưởng</th><th>Người</th><th>Ngày công</th><th>Lương</th><th>Tạm ứng</th><th>THỰC NHẬN / TRẢ LẠI</th></tr></thead><tbody>${rows.flatMap(x=>x.sd.map(p=>{const a=advPersonRange(x.w.id,p.name,summaryFrom,summaryTo),ps=payStatus(p.total-a);return `<tr><td>${esc2(x.w.name)}</td><td class="left">${esc2(p.name)}</td><td>${p.days}</td><td>${fmt(p.total)}</td><td>${fmt(a)}</td><td class="summaryTotal">${ps.label}: ${fmt(ps.value)}</td></tr>`})).join('')||'<tr><td colspan="6" class="empty">Chưa có dữ liệu chấm công trong khoảng tháng đã chọn.</td></tr>'}</tbody></table></div></div>`;
+    document.getElementById('sumFrom').onchange=function(){summaryFrom=this.value;if(summaryFrom>summaryTo)summaryTo=summaryFrom;renderSummaryV12();};
+    document.getElementById('sumTo').onchange=function(){summaryTo=this.value;if(summaryTo<summaryFrom)summaryFrom=summaryTo;renderSummaryV12();};
   }
 
   const originalRender=window.render;
