@@ -24,7 +24,7 @@ iframe{display:none;border:0;width:100%;height:100%}body.running iframe{display:
    current=mode==='enterprise'?'enterprise':'personal';localStorage.setItem(MODE,current);
    document.getElementById('chooser').classList.add('hide');document.getElementById('bar').classList.add('show');document.body.classList.add('running');
    document.getElementById('modeTitle').textContent=current==='enterprise'?'🏢 DOANH NGHIỆP':'👤 CÁ NHÂN';
-   frame.src='./index.html?v=mode4-'+current+'-20260914';
+   frame.src='./index.html?v=mode5-'+current+'-20260914';
  };
  window.changeMode=function(){localStorage.removeItem(MODE);current='';frame.src='about:blank';document.body.classList.remove('running');document.getElementById('bar').classList.remove('show');document.getElementById('chooser').classList.remove('hide')};
  function cleanEnterpriseUI(w,d){
@@ -47,7 +47,10 @@ iframe{display:none;border:0;width:100%;height:100%}body.running iframe{display:
    if(current==='enterprise'){
      try{w.localStorage.setItem('TT_CC_APP_MODE','enterprise')}catch(e){}
      cleanEnterpriseUI(w,d);
-     var s=d.createElement('script');s.src='./enterprise.js?v=enterprise-separate-ad15d4bc';s.onload=function(){cleanEnterpriseUI(w,d)};d.body.appendChild(s);
+     var s=d.createElement('script');s.src='./enterprise.js?v=enterprise-separate-4146062e';s.onload=function(){
+       cleanEnterpriseUI(w,d);
+       var sep=d.createElement('script');sep.src='./enterprise-separate.js?v=9fc1b297';d.body.appendChild(sep);
+     };d.body.appendChild(s);
    }else{
      try{w.localStorage.setItem('TT_CC_APP_MODE','personal')}catch(e){}
    }
