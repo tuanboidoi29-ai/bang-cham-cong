@@ -1,0 +1,82 @@
+name: Apply TT V22 Half Day
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch half day calculation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+
+          # Add work fraction state.
+          s=s.replace("let data=load(),active=0,month=new Date().toISOString().slice(0,7),view='workshop',pType='xuong',editKey='',editType='xuong',editOriginalKey='';",
+                      "let data=load(),active=0,month=new Date().toISOString().slice(0,7),view='workshop',pType='xuong',pFraction=1,editKey='',editType='xuong',editFraction=1,editOriginalKey='';")
+
+          # Punch modal: add 1/2 and 2/2 choices and make wage calculated.
+          old="<div class=\"row\"><input id=\"pWage\" type=\"number\" min=\"0\" inputmode=\"numeric\" placeholder=\"Tiền lương/ngày\"></div>"
+          new="<div class=\"field\"><label>Ngày công</label><div class=\"choice\"><button id=\"pHalf\" class=\"purple\" onclick=\"chooseFraction(0.5)\">1/2<br><small>Nửa công</small></button><button id=\"pFull\" class=\"green\" onclick=\"chooseFraction(1)\">2/2<br><small>1 ngày công</small></button></div></div><div class=\"row\"><input id=\"pWage\" type=\"number\" min=\"0\" inputmode=\"numeric\" placeholder=\"Tiền công tự tính\" readonly></div>"
+          s=s.replace(old,new,1)
+
+          # Edit modal: add same choices.
+          old="<div class=\"row\"><input id=\"eWage\" type=\"number\" min=\"0\" inputmode=\"numeric\" placeholder=\"Tiền lương/ngày\"></div>"
+          new="<div class=\"field\"><label>Ngày công</label><div class=\"choice\"><button id=\"eHalf\" class=\"purple\" onclick=\"chooseEditFraction(0.5)\">1/2<br><small>Nửa công</small></button><button id=\"eFull\" class=\"green\" onclick=\"chooseEditFraction(1)\">2/2<br><small>1 ngày công</small></button></div></div><div class=\"row\"><input id=\"eWage\" type=\"number\" min=\"0\" inputmode=\"numeric\" placeholder=\"Tiền công tự tính\" readonly></div>"
+          s=s.replace(old,new,1)
+
+          # Replace punch/open type functions.
+          import re
+          s=re.sub(r"function openPunch\(\)\{.*?\}\nfunction chooseType\(t\)\{.*?\}\nfunction markType\(\)\{.*?\}",
+          """function calcPunchWage(){let w=data.workshops[active];if(!w)return;let base=pType==='xuong'?Number(w.lx||0):Number(w.ct||0);let e=document.getElementById('pWage');if(e)e.value=Math.round(base*pFraction)}
+function markFraction(){let h=document.getElementById('pHalf'),f=document.getElementById('pFull');if(h)h.classList.toggle('selected',pFraction===0.5);if(f)f.classList.toggle('selected',pFraction===1)}
+function chooseFraction(v){pFraction=Number(v)===0.5?0.5:1;calcPunchWage();markFraction()}
+function openPunch(){let w=data.workshops[active];pType='xuong';pFraction=1;document.getElementById('pName').value='';document.getElementById('pDate').value=today();document.getElementById('punchWorkshop').textContent=w.name+' · chọn LX/CT và 1/2 hoặc 2/2';document.getElementById('pOTMorning').value=0;document.getElementById('pOTEve').value=0;document.getElementById('pOTRate').value=w.ot;calcPunchWage();markType();markFraction();openM('punchModal')}
+function chooseType(t){pType=t;let w=data.workshops[active];document.getElementById('pOTRate').value=w.ot;calcPunchWage();markType()}
+function markType(){document.getElementById('btnLX').classList.toggle('selected',pType==='xuong');document.getElementById('btnCT').classList.toggle('selected',pType==='congtrinh')}""",s,count=1,flags=re.S)
+
+          # Save workFraction in punch records.
+          s=s.replace("data.records[k]={in:now(),out:'',type:pType,wage,otMorning:om,otEvening:oe,otRate:orate}","data.records[k]={in:now(),out:'',type:pType,wage,workFraction:pFraction,otMorning:om,otEvening:oe,otRate:orate}")
+          s=s.replace("r.type=pType;r.wage=wage;r.otMorning=om;", "r.type=pType;r.wage=wage;r.workFraction=pFraction;r.otMorning=om;")
+
+          # Replace edit functions to support fraction.
+          s=re.sub(r"function openEdit\(name,date\)\{.*?\}\nfunction chooseEditType\(t\)\{.*?\}\nfunction markEditType\(\)\{.*?\}",
+          """function calcEditWage(){let w=data.workshops[active];if(!w)return;let base=editType==='xuong'?Number(w.lx||0):Number(w.ct||0);let e=document.getElementById('eWage');if(e)e.value=Math.round(base*editFraction);updateEditCalc()}
+function markEditFraction(){let h=document.getElementById('eHalf'),f=document.getElementById('eFull');if(h)h.classList.toggle('selected',editFraction===0.5);if(f)f.classList.toggle('selected',editFraction===1)}
+function chooseEditFraction(v){editFraction=Number(v)===0.5?0.5:1;calcEditWage();markEditFraction()}
+function openEdit(name,date){let w=data.workshops[active],k=key(w,name,date),r=data.records[k]||{in:'',out:'',type:'xuong',workFraction:1,wage:w.lx,otMorning:0,otEvening:0,otRate:w.ot};editKey=k;editOriginalKey=k;editType=r.type||'xuong';editFraction=Number(r.workFraction||1)===0.5?0.5:1;document.getElementById('editInfo').textContent=name+' · chọn LX/CT và 1/2 hoặc 2/2';document.getElementById('eDate').value=date;document.getElementById('eIn').value=r.in||'';document.getElementById('eOut').value=r.out||'';document.getElementById('eOTMorning').value=Number(r.otMorning||0);document.getElementById('eOTEve').value=Number(r.otEvening||0);document.getElementById('eOTRate').value=Number(r.otRate??w.ot);calcEditWage();markEditType();markEditFraction();openM('editModal')}
+function chooseEditType(t){editType=t;let w=data.workshops[active];document.getElementById('eOTRate').value=w.ot;calcEditWage();markEditType()}
+function markEditType(){document.getElementById('eLX').classList.toggle('selected',editType==='xuong');document.getElementById('eCT').classList.toggle('selected',editType==='congtrinh')}""",s,count=1,flags=re.S)
+
+          # Save fraction in edit.
+          s=s.replace("type:editType,wage,otMorning:om", "type:editType,wage,workFraction:editFraction,otMorning:om")
+
+          # Count half/full days in workshop totals.
+          s=s.replace("days++;workPay+=Number(r.wage||0);", "days+=Number(r.workFraction||1);workPay+=Number(r.wage||0);")
+          s=s.replace("if(r){dcount++;let rh=hours(r.in,r.out)", "if(r){let wf=Number(r.workFraction||1);dcount+=wf;let rh=hours(r.in,r.out)")
+          s=s.replace("<div class=\"daynum\">'+(r.type==='congtrinh'?'CT':'LX')+'</div>", "<div class=\"daynum\">'+(r.type==='congtrinh'?'CT':'LX')+' '+(Number(r.workFraction||1)===0.5?'1/2':'2/2')+'</div>")
+
+          p.write_text(s,encoding='utf-8')
+
+          # Patch external v12.js totals too.
+          q=Path('v12.js')
+          if q.exists():
+            v=q.read_text(encoding='utf-8')
+            v=v.replace("rows[name].days+=1;", "rows[name].days+=Number(r.workFraction||1);")
+            q.write_text(v,encoding='utf-8')
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html v12.js
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'V22: tu dong tinh nua cong va du cong cho LX CT'
+          git push
