@@ -1,63 +1,8 @@
 <!doctype html>
-<html lang="vi">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>TT - Bảng chấm công</title>
-<style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#f3f6fa;font-family:Arial,Helvetica,sans-serif}body{overflow:hidden}
-#chooser{position:fixed;inset:0;z-index:20;background:#f3f6fa;display:flex;align-items:center;justify-content:center;padding:20px}
-#chooser.hide{display:none}.box{width:min(520px,100%);background:#fff;border-radius:22px;padding:22px;box-shadow:0 12px 40px #0f172a22;text-align:center}.box h2{margin:0 0 6px}.hint{color:#667085;margin-bottom:18px}.modes{display:grid;grid-template-columns:1fr 1fr;gap:12px}.mode{border:0;border-radius:18px;padding:22px 10px;color:#fff;font-weight:800;font-size:19px;min-height:130px}.mode small{display:block;font-size:12px;margin-top:8px}.personal{background:#087443}.enterprise{background:#7c3aed}
-#bar{display:none;height:58px;background:#fff;padding:7px 10px;gap:8px;align-items:center;border-bottom:1px solid #dce3eb}#bar.show{display:flex}#bar strong{flex:1}#bar button{border:0;border-radius:10px;background:#667085;color:#fff;padding:10px 12px;font-weight:700}
-iframe{display:none;border:0;width:100%;height:100%}body.running iframe{display:block}body.running #ttApp{height:calc(100% - 58px)}
-@media(max-width:600px){.modes{grid-template-columns:1fr}.mode{min-height:110px}}
-</style>
-</head>
-<body>
-<div id="chooser"><div class="box"><h2>🕘 TT - BẢNG CHẤM CÔNG</h2><div class="hint">Chọn một chế độ để vào ứng dụng</div><div class="modes"><button class="mode personal" onclick="startMode('personal')">👤 CÁ NHÂN<small>Chấm công cá nhân hiện tại</small></button><button class="mode enterprise" onclick="startMode('enterprise')">🏢 DOANH NGHIỆP<small>Danh sách công nhân + chấm theo từng người</small></button></div></div></div>
-<div id="bar"><strong id="modeTitle"></strong><button onclick="changeMode()">Đổi chế độ</button></div>
-<iframe id="ttApp"></iframe>
-<script>
-(function(){
- var MODE='TT_CC_APP_MODE_V3',frame=document.getElementById('ttApp'),current='';
- window.startMode=function(mode){
-   current=mode==='enterprise'?'enterprise':'personal';localStorage.setItem(MODE,current);
-   document.getElementById('chooser').classList.add('hide');document.getElementById('bar').classList.add('show');document.body.classList.add('running');
-   document.getElementById('modeTitle').textContent=current==='enterprise'?'🏢 DOANH NGHIỆP':'👤 CÁ NHÂN';
-   frame.src='./index.html?v=mode5-'+current+'-20260914';
- };
- window.changeMode=function(){localStorage.removeItem(MODE);current='';frame.src='about:blank';document.body.classList.remove('running');document.getElementById('bar').classList.remove('show');document.getElementById('chooser').classList.remove('hide')};
- function cleanEnterpriseUI(w,d){
-   var style=d.createElement('style');style.id='ttEnterpriseSeparateStyle';style.textContent='#tabs{display:none!important} #ttModeHeader,#ttModeChooser{display:none!important}';d.head.appendChild(style);
-   function buildWorkshopSelect(){
-     if(d.getElementById('ttEnterpriseWorkshopSelect'))return;
-     var tabs=d.getElementById('tabs');if(!tabs)return;
-     var btns=Array.prototype.slice.call(tabs.querySelectorAll('button')).filter(function(b){var t=(b.textContent||'').trim();return t.indexOf('🏭')===0});
-     if(!btns.length)return;
-     var wrap=d.createElement('div');wrap.id='ttEnterpriseWorkshopSelect';wrap.className='card noPrint';wrap.style.cssText='margin-top:8px;padding:10px 12px';
-     var sel=d.createElement('select');sel.style.cssText='width:100%;font-weight:800;font-size:16px';
-     btns.forEach(function(b,i){var o=d.createElement('option');o.value=i;o.textContent=(b.textContent||'').replace(/^🏭\s*/,'');if(b.classList.contains('active'))o.selected=true;sel.appendChild(o)});
-     sel.onchange=function(){var i=Number(sel.value);if(btns[i])btns[i].click()};
-     wrap.innerHTML='<div style="font-size:12px;font-weight:800;color:#475467;margin-bottom:6px">🏭 XƯỞNG DOANH NGHIỆP</div>';wrap.appendChild(sel);
-     var content=d.getElementById('content');if(content&&content.parentNode)content.parentNode.insertBefore(wrap,content);
-   }
-   buildWorkshopSelect();setTimeout(buildWorkshopSelect,200);setTimeout(buildWorkshopSelect,700);
- }
- frame.addEventListener('load',function(){if(!current||!frame.src.includes('index.html'))return;var w=frame.contentWindow,d=w.document;
-   if(current==='enterprise'){
-     try{w.localStorage.setItem('TT_CC_APP_MODE','enterprise')}catch(e){}
-     cleanEnterpriseUI(w,d);
-     var s=d.createElement('script');s.src='./enterprise.js?v=enterprise-separate-4146062e';s.onload=function(){
-       cleanEnterpriseUI(w,d);
-       var sep=d.createElement('script');sep.src='./enterprise-separate.js?v=9fc1b297';d.body.appendChild(sep);
-     };d.body.appendChild(s);
-   }else{
-     try{w.localStorage.setItem('TT_CC_APP_MODE','personal')}catch(e){}
-   }
-   d.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.tt-edit-day-btn');if(!b)return;e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();var td=b.closest('td.daycell'),tr=b.closest('tr');if(!td||!tr)return;var cells=Array.prototype.slice.call(tr.querySelectorAll('td')),day=cells.indexOf(td);if(day<1)return;var name=(cells[0].textContent||'').trim(),mi=d.querySelector('input[type="month"]'),ym=mi&&mi.value?mi.value:new Date().toISOString().slice(0,7),date=ym+'-'+String(day).padStart(2,'0');try{if(typeof w.openEdit==='function')w.openEdit(name,date)}catch(err){}var modal=d.getElementById('editModal');if(modal)modal.classList.add('show')},true);
- });
- var saved=localStorage.getItem(MODE);if(saved==='personal'||saved==='enterprise')startMode(saved);
-})();
-</script>
-</body>
-</html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>TT - Bảng chấm công</title><style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#f3f6fa;font-family:Arial,Helvetica,sans-serif}body{overflow:hidden}#chooser{position:fixed;inset:0;z-index:20;background:#f3f6fa;display:flex;align-items:center;justify-content:center;padding:20px}#chooser.hide{display:none}.box{width:min(520px,100%);background:#fff;border-radius:22px;padding:22px;box-shadow:0 12px 40px #0f172a22;text-align:center}.box h2{margin:0 0 6px}.hint{color:#667085;margin-bottom:18px}.modes{display:grid;grid-template-columns:1fr 1fr;gap:12px}.mode{border:0;border-radius:18px;padding:22px 10px;color:#fff;font-weight:800;font-size:19px;min-height:130px}.mode small{display:block;font-size:12px;margin-top:8px}.personal{background:#087443}.enterprise{background:#7c3aed}#bar{display:none;height:58px;background:#fff;padding:7px 10px;gap:8px;align-items:center;border-bottom:1px solid #dce3eb}#bar.show{display:flex}#bar strong{flex:1}#bar button{border:0;border-radius:10px;background:#667085;color:#fff;padding:10px 12px;font-weight:700}iframe{display:none;border:0;width:100%;height:100%}body.running iframe{display:block}body.running #ttApp{height:calc(100% - 58px)}@media(max-width:600px){.modes{grid-template-columns:1fr}.mode{min-height:110px}}
+</style></head><body>
+<div id="chooser"><div class="box"><h2>🕘 TT - BẢNG CHẤM CÔNG</h2><div class="hint">Chọn một chế độ sử dụng</div><div class="modes"><button class="mode personal" onclick="startMode('personal')">👤 CÁ NHÂN<small>Giao diện và tính năng hiện tại</small></button><button class="mode enterprise" onclick="startMode('enterprise')">🏢 DOANH NGHIỆP<small>Giao diện doanh nghiệp riêng</small></button></div></div></div>
+<div id="bar"><strong id="modeTitle"></strong><button onclick="changeMode()">Đổi chế độ</button></div><iframe id="ttApp"></iframe>
+<script>(function(){var MODE='TT_CC_APP_MODE_V4',frame=document.getElementById('ttApp'),current='';window.startMode=function(mode){current=mode==='enterprise'?'enterprise':'personal';localStorage.setItem(MODE,current);document.getElementById('chooser').classList.add('hide');document.getElementById('bar').classList.add('show');document.body.classList.add('running');document.getElementById('modeTitle').textContent=current==='enterprise'?'🏢 DOANH NGHIỆP':'👤 CÁ NHÂN';frame.src=current==='enterprise'?'./enterprise-standalone.html?v=d1ee64ee':'./index.html?v=personal-stable-20260914'};window.changeMode=function(){localStorage.removeItem(MODE);current='';frame.src='about:blank';document.body.classList.remove('running');document.getElementById('bar').classList.remove('show');document.getElementById('chooser').classList.remove('hide')};var saved=localStorage.getItem(MODE);if(saved==='personal'||saved==='enterprise')startMode(saved)})();</script>
+</body></html>
