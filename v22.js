@@ -182,4 +182,31 @@
     closeM('editModal');
     toast('Đã xóa ngày chấm công');
   };
+
+  function decorateEditButtons(){
+    if(typeof view!=='undefined' && view!=='workshop')return;
+    const table=document.querySelector('#content table.grid');
+    if(!table)return;
+    table.querySelectorAll('td.daycell.worked,td.daycell.construction').forEach(function(td){
+      if(td.querySelector('.tt-edit-day-btn'))return;
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className='tt-edit-day-btn noPrint';
+      btn.textContent='✏️ Sửa/Xóa';
+      btn.style.cssText='display:block;margin:4px auto 0;padding:3px 6px;border:0;border-radius:6px;background:#667085;color:#fff;font-size:9px;font-weight:700;line-height:1.2;';
+      btn.onclick=function(ev){
+        ev.preventDefault();
+        ev.stopPropagation();
+        if(typeof td.onclick==='function')td.onclick.call(td,ev);
+      };
+      td.appendChild(btn);
+    });
+  }
+
+  const renderBeforeEditButton=window.render;
+  window.render=function(){
+    renderBeforeEditButton();
+    setTimeout(decorateEditButtons,0);
+  };
+  setTimeout(decorateEditButtons,0);
 })();
