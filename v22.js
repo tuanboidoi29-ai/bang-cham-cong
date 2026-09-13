@@ -194,11 +194,21 @@
       btn.className='tt-edit-day-btn noPrint';
       btn.textContent='✏️ Sửa/Xóa';
       btn.style.cssText='display:block;margin:4px auto 0;padding:3px 6px;border:0;border-radius:6px;background:#667085;color:#fff;font-size:9px;font-weight:700;line-height:1.2;';
-      btn.onclick=function(ev){
+      btn.addEventListener('click',function(ev){
         ev.preventDefault();
         ev.stopPropagation();
-        if(typeof td.onclick==='function')td.onclick.call(td,ev);
-      };
+        const clickCode=td.getAttribute('onclick')||'';
+        const m=clickCode.match(/openEdit\((.+),(.+)\)/);
+        if(m){
+          try{
+            const name=JSON.parse(m[1]);
+            const date=JSON.parse(m[2]);
+            window.openEdit(name,date);
+            return;
+          }catch(e){}
+        }
+        td.click();
+      });
       td.appendChild(btn);
     });
   }
