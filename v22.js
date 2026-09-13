@@ -19,9 +19,7 @@
   function removeLegacyPunchFractionBlocks(){
     const modal=document.getElementById('punchModal');
     if(!modal)return;
-
     modal.querySelectorAll('#ttFraction,[data-tt-punch-fraction="1"],.tt-fraction-block').forEach(el=>el.remove());
-
     const box=modal.querySelector('.box')||modal;
     const nodes=Array.from(box.querySelectorAll('div')).filter(isFractionBlock);
     nodes.forEach(el=>{
@@ -34,49 +32,33 @@
   function createPunchFractionOnce(){
     const modal=document.getElementById('punchModal');
     if(!modal)return null;
-
     let current=modal.querySelector('#ttFraction');
     if(current)return current;
-
     removeLegacyPunchFractionBlocks();
-
     const wage=document.getElementById('pWage');
     if(!wage)return null;
-
     const block=document.createElement('div');
     block.id='ttFraction';
     block.setAttribute('data-tt-punch-fraction','1');
     block.style.margin='14px 0';
     block.innerHTML='<div style="font-size:16px;font-weight:800;margin-bottom:8px">📅 CHỌN SỐ CÔNG</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button id="ttHalf" type="button" style="min-height:70px;background:#f59e0b;color:white;font-size:18px">½<br><small>Nửa công</small></button><button id="ttFull" type="button" style="min-height:70px;background:#087443;color:white;font-size:18px">1<br><small>Đủ công</small></button></div><div id="ttCalc" class="hint" style="margin-top:7px;font-weight:800"></div>';
-
     const wageRow=wage.parentNode;
     wageRow.parentNode.insertBefore(block,wageRow);
-
-    document.getElementById('ttHalf').onclick=function(){
-      pFraction=.5;
-      updatePunchFraction();
-    };
-    document.getElementById('ttFull').onclick=function(){
-      pFraction=1;
-      updatePunchFraction();
-    };
-
+    document.getElementById('ttHalf').onclick=function(){pFraction=.5;updatePunchFraction()};
+    document.getElementById('ttFull').onclick=function(){pFraction=1;updatePunchFraction()};
     return block;
   }
 
   function updatePunchFraction(){
     const block=document.getElementById('ttFraction');
     if(!block)return;
-
     const h=document.getElementById('ttHalf');
     const f=document.getElementById('ttFull');
     if(h)h.style.outline=pFraction===.5?'4px solid #1677ff':'none';
     if(f)f.style.outline=pFraction===1?'4px solid #1677ff':'none';
-
     const pay=baseWage(pType)*pFraction;
     const wage=document.getElementById('pWage');
     if(wage){wage.value=pay;wage.readOnly=true}
-
     const calc=document.getElementById('ttCalc');
     if(calc)calc.textContent=(pFraction===.5?'½ Nửa công':'1 Đủ công')+' = '+money2(pay);
   }
@@ -91,15 +73,11 @@
   window.chooseType=function(t){
     pType=t;
     const w=data.workshops[active];
-
     const wage=document.getElementById('pWage');
     if(wage)wage.value=t==='congtrinh'?Number(w.ct||0):Number(w.lx||0);
-
     const ot=document.getElementById('pOTRate');
     if(ot)ot.value=Number(w.ot||0);
-
     if(typeof markType==='function')markType();
-
     createPunchFractionOnce();
     updatePunchFraction();
   };
@@ -113,7 +91,6 @@
     const oe=Number(document.getElementById('pOTEve').value||0);
     const orate=Number(document.getElementById('pOTRate').value||0);
     if(!name)return toast('Nhập tên người chấm công');
-
     const k=key(w,name,date);
     const r=data.records[k];
     if(!r){
@@ -166,6 +143,8 @@
     eFraction=Number(r&&r.workFraction||1)===.5?.5:1;
     ensureEditFraction();
     updateEditFraction();
+    const info=document.getElementById('editInfo');
+    if(info && r) info.textContent=name+' · '+date+' · chỉnh trực tiếp hoặc xóa ngày công này';
   };
 
   const originalChooseEditType=window.chooseEditType;
@@ -187,5 +166,20 @@
     if(nk!==editOriginalKey)delete data.records[editOriginalKey];
     data.records[nk]={in:document.getElementById('eIn').value,out:document.getElementById('eOut').value,type:editType,wage,workFraction:eFraction,otMorning:om,otEvening:oe,otRate:orate};
     save();closeM('editModal');toast('Đã lưu chấm công');
+  };
+
+  window.removeEdit=function(){
+    if(!editOriginalKey)return;
+    const r=data.records[editOriginalKey];
+    if(!r)return toast('Ngày này chưa có chấm công');
+    const parts=editOriginalKey.split('|');
+    const employee=parts[1]||'';
+    const date=parts[2]||'';
+    if(!confirm('Xóa chấm công của '+employee+' ngày '+date+'?'))return;
+    delete data.records[editOriginalKey];
+    if(editKey && editKey!==editOriginalKey)delete data.records[editKey];
+    save();
+    closeM('editModal');
+    toast('Đã xóa ngày chấm công');
   };
 })();
