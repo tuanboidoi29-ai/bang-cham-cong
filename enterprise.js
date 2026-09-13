@@ -37,6 +37,38 @@
     if(e){e.style.background=appMode==='enterprise'?'#7c3aed':'#e2e8f0';e.style.color=appMode==='enterprise'?'#fff':'#334155'}
   }
 
+  function isFreePunchButton(b){
+    if(!b || b.closest('#ttEnterprisePanel') || b.closest('#ttWorkerModal'))return false;
+    const t=(b.textContent||'').replace(/\s+/g,' ').trim().toUpperCase();
+    return t==='🟢 CHẤM CÔNG'||t==='CHẤM CÔNG';
+  }
+
+  function applyModeVisibility(){
+    const enterpriseIds=['ttEnterprisePanel','ttExcelModal','ttWorkerModal'];
+    enterpriseIds.forEach(id=>{
+      const el=document.getElementById(id);
+      if(el && appMode!=='enterprise')el.classList.remove('show');
+      if(el && id==='ttEnterprisePanel')el.style.display=appMode==='enterprise'?'':'none';
+    });
+
+    document.querySelectorAll('button').forEach(b=>{
+      if(isFreePunchButton(b)) b.style.display=appMode==='enterprise'?'none':'';
+    });
+
+    const n=document.getElementById('pName');
+    if(n){
+      if(appMode==='personal'){
+        n.readOnly=false;
+        n.placeholder='Tên người chấm công';
+      }else{
+        n.readOnly=true;
+        n.placeholder='Chọn công nhân từ danh sách';
+      }
+    }
+
+    document.body.setAttribute('data-tt-mode',appMode);
+  }
+
   const oldNamesForMonth=window.namesForMonth;
   window.namesForMonth=function(w,Y,M){
     const base=typeof oldNamesForMonth==='function'?oldNamesForMonth(w,Y,M):[];
@@ -46,7 +78,8 @@
   try{namesForMonth=window.namesForMonth}catch(e){}
 
   function openPunchWorker(name){
-    if(typeof openPunch==='function')openPunch();
+    const original=window.__TT_ORIGINAL_OPEN_PUNCH__;
+    if(typeof original==='function')original();
     const n=document.getElementById('pName');if(n){n.value=name;n.readOnly=true}
     const info=document.getElementById('punchWorkshop');if(info)info.textContent=(activeWorkshop()?.name||'')+' · '+name+' · chọn LX hoặc CT';
   }
@@ -59,16 +92,12 @@
   }
   window.TT_punchSelectedWorker=openNormalPunchEnterprise;
 
-  function ensurePersonalNameEditable(){
-    const n=document.getElementById('pName');
-    if(n && appMode==='personal')n.readOnly=false;
-  }
-
   function renderEnterprisePanel(){
+    const old=document.getElementById('ttEnterprisePanel');
+    if(old)old.remove();
     if(appMode!=='enterprise' || view!=='workshop')return;
     const w=activeWorkshop(); if(!w)return;
     const content=document.getElementById('content'); if(!content)return;
-    if(document.getElementById('ttEnterprisePanel'))return;
     const list=workersFor(w.id);
     const panel=document.createElement('div');panel.id='ttEnterprisePanel';panel.className='card noPrint';
     panel.innerHTML='<div class="bar"><div><div class="title">🏢 CHẾ ĐỘ DOANH NGHIỆP</div><div class="hint">Nhập danh sách công nhân từ Excel, sau đó chọn từng người để chấm công.</div></div><div class="controls"><button class="purple" id="ttImportExcel">📥 Nhập Excel</button><button class="gray" id="ttManageWorkers">👥 Danh sách ('+list.length+')</button></div></div>'+
@@ -77,12 +106,6 @@
     document.getElementById('ttImportExcel').onclick=openImport;
     document.getElementById('ttManageWorkers').onclick=openWorkerList;
     document.getElementById('ttPunchWorker').onclick=openNormalPunchEnterprise;
-
-    // Ở chế độ doanh nghiệp, ẩn nút chấm công tự do để tránh nhập sai tên.
-    content.querySelectorAll('button').forEach(b=>{
-      const t=(b.textContent||'').replace(/\s+/g,' ').trim().toUpperCase();
-      if((t==='🟢 CHẤM CÔNG'||t==='CHẤM CÔNG') && !b.closest('#ttEnterprisePanel')) b.style.display='none';
-    });
   }
 
   function makeModal(id,title,html){
@@ -92,6 +115,7 @@
   }
 
   function openImport(){
+    if(appMode!=='enterprise')return;
     const m=makeModal('ttExcelModal','📥 NHẬP DANH SÁCH CÔNG NHÂN TỪ EXCEL','<div class="hint">Hỗ trợ .xlsx, .xls. Hệ thống ưu tiên cột “Họ tên / Họ và tên / Tên / Công nhân”. Nếu không có, lấy cột đầu tiên có dữ liệu.</div><div class="row"><input id="ttExcelFile" type="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></div><div id="ttExcelPreview" class="hint"></div><div class="row"><button class="green" id="ttExcelSave">Nhập danh sách</button><button class="gray" id="ttExcelClose">Hủy</button></div>');
     m.classList.add('show');
     const file=document.getElementById('ttExcelFile');
@@ -133,6 +157,7 @@
   }
 
   function openWorkerList(){
+    if(appMode!=='enterprise')return;
     const w=activeWorkshop();if(!w)return;const list=workersFor(w.id);
     const m=makeModal('ttWorkerModal','👥 DANH SÁCH CÔNG NHÂN','<div id="ttWorkerBody"></div><div class="row"><button class="gray" id="ttWorkerClose">Đóng</button></div>');
     const body=document.getElementById('ttWorkerBody');
@@ -145,15 +170,16 @@
   const originalRender=window.render;
   window.render=function(){
     const r=originalRender.apply(this,arguments);
-    setTimeout(function(){ensureModeButtons();ensurePersonalNameEditable();renderEnterprisePanel()},0);
+    setTimeout(function(){ensureModeButtons();renderEnterprisePanel();applyModeVisibility()},0);
     return r;
   };
 
-  const originalOpenPunch=window.openPunch;
+  window.__TT_ORIGINAL_OPEN_PUNCH__=window.openPunch;
   window.openPunch=function(){
     if(appMode==='enterprise')return openNormalPunchEnterprise();
-    if(typeof originalOpenPunch==='function')return originalOpenPunch.apply(this,arguments);
+    const n=document.getElementById('pName');if(n)n.readOnly=false;
+    if(typeof window.__TT_ORIGINAL_OPEN_PUNCH__==='function')return window.__TT_ORIGINAL_OPEN_PUNCH__.apply(this,arguments);
   };
 
-  setTimeout(function(){ensureModeButtons();ensurePersonalNameEditable();renderEnterprisePanel()},50);
+  setTimeout(function(){ensureModeButtons();renderEnterprisePanel();applyModeVisibility()},50);
 })();
