@@ -49,7 +49,8 @@
     block.style.margin='14px 0';
     block.innerHTML='<div style="font-size:16px;font-weight:800;margin-bottom:8px">📅 CHỌN SỐ CÔNG</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button id="ttHalf" type="button" style="min-height:70px;background:#f59e0b;color:white;font-size:18px">½<br><small>Nửa công</small></button><button id="ttFull" type="button" style="min-height:70px;background:#087443;color:white;font-size:18px">1<br><small>Đủ công</small></button></div><div id="ttCalc" class="hint" style="margin-top:7px;font-weight:800"></div>';
 
-    wage.parentNode.insertBefore(block,wage.parentNode);
+    const wageRow=wage.parentNode;
+    wageRow.parentNode.insertBefore(block,wageRow);
 
     document.getElementById('ttHalf').onclick=function(){
       pFraction=.5;
@@ -137,7 +138,8 @@
     block.id='ttEFraction';
     block.style.margin='14px 0';
     block.innerHTML='<div style="font-size:16px;font-weight:800;margin-bottom:8px">📅 CHỌN SỐ CÔNG</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button id="ttEHalf" type="button" style="min-height:70px;background:#f59e0b;color:white;font-size:18px">½<br><small>Nửa công</small></button><button id="ttEFull" type="button" style="min-height:70px;background:#087443;color:white;font-size:18px">1<br><small>Đủ công</small></button></div><div id="ttECalc" class="hint" style="margin-top:7px;font-weight:800"></div>';
-    wage.parentNode.insertBefore(block,wage.parentNode);
+    const wageRow=wage.parentNode;
+    wageRow.parentNode.insertBefore(block,wageRow);
     document.getElementById('ttEHalf').onclick=function(){eFraction=.5;updateEditFraction()};
     document.getElementById('ttEFull').onclick=function(){eFraction=1;updateEditFraction()};
     return block;
