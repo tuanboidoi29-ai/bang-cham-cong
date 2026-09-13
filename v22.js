@@ -187,29 +187,31 @@
     if(typeof view!=='undefined' && view!=='workshop')return;
     const table=document.querySelector('#content table.grid');
     if(!table)return;
-    table.querySelectorAll('td.daycell.worked,td.daycell.construction').forEach(function(td){
-      if(td.querySelector('.tt-edit-day-btn'))return;
-      const btn=document.createElement('button');
-      btn.type='button';
-      btn.className='tt-edit-day-btn noPrint';
-      btn.textContent='✏️ Sửa/Xóa';
-      btn.style.cssText='display:block;margin:4px auto 0;padding:3px 6px;border:0;border-radius:6px;background:#667085;color:#fff;font-size:9px;font-weight:700;line-height:1.2;';
-      btn.addEventListener('click',function(ev){
-        ev.preventDefault();
-        ev.stopPropagation();
-        const clickCode=td.getAttribute('onclick')||'';
-        const m=clickCode.match(/openEdit\((.+),(.+)\)/);
-        if(m){
-          try{
-            const name=JSON.parse(m[1]);
-            const date=JSON.parse(m[2]);
-            window.openEdit(name,date);
-            return;
-          }catch(e){}
-        }
-        td.click();
-      });
-      td.appendChild(btn);
+    const ym=String(month||'');
+    const bodyRows=table.querySelectorAll('tbody tr');
+    bodyRows.forEach(function(tr){
+      const cells=tr.querySelectorAll('td');
+      if(!cells.length)return;
+      const name=(cells[0].textContent||'').trim();
+      for(let i=1;i<cells.length;i++){
+        const td=cells[i];
+        if(!td.classList.contains('daycell'))continue;
+        if(!(td.classList.contains('worked')||td.classList.contains('construction')))continue;
+        if(td.querySelector('.tt-edit-day-btn'))continue;
+        const day=String(i).padStart(2,'0');
+        const date=ym+'-'+day;
+        const btn=document.createElement('button');
+        btn.type='button';
+        btn.className='tt-edit-day-btn noPrint';
+        btn.textContent='✏️ Sửa/Xóa';
+        btn.style.cssText='display:block;margin:4px auto 0;padding:4px 7px;border:0;border-radius:6px;background:#667085;color:#fff;font-size:9px;font-weight:700;line-height:1.2;position:relative;z-index:5;';
+        btn.addEventListener('click',function(ev){
+          ev.preventDefault();
+          ev.stopPropagation();
+          if(typeof window.openEdit==='function') window.openEdit(name,date);
+        },false);
+        td.appendChild(btn);
+      }
     });
   }
 
