@@ -7,12 +7,19 @@
 <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f3f6fa}iframe{display:block;border:0;width:100%;height:100%;}</style>
 </head>
 <body>
-<iframe id="ttApp" src="./index.html?v=editfix20260914"></iframe>
+<iframe id="ttApp" src="./index.html?v=enterprise20260914"></iframe>
 <script>
 (function(){
   var frame=document.getElementById('ttApp');
   frame.addEventListener('load',function(){
     var w=frame.contentWindow,d=w.document;
+
+    // Nạp chế độ Cá nhân / Doanh nghiệp vào trong app hiện tại.
+    var s=d.createElement('script');
+    s.src='./enterprise.js?v=7a8a601d';
+    d.body.appendChild(s);
+
+    // Giữ bản sửa Sửa/Xóa đang hoạt động ổn định.
     d.addEventListener('click',function(e){
       var b=e.target.closest&&e.target.closest('.tt-edit-day-btn');
       if(!b)return;
