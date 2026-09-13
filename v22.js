@@ -21,8 +21,7 @@
     if(!modal)return;
     modal.querySelectorAll('#ttFraction,[data-tt-punch-fraction="1"],.tt-fraction-block').forEach(el=>el.remove());
     const box=modal.querySelector('.box')||modal;
-    const nodes=Array.from(box.querySelectorAll('div')).filter(isFractionBlock);
-    nodes.forEach(el=>{
+    Array.from(box.querySelectorAll('div')).filter(isFractionBlock).forEach(el=>{
       if(el===box || el===modal)return;
       const childFraction=Array.from(el.children).some(isFractionBlock);
       if(!childFraction) el.remove();
@@ -136,27 +135,60 @@
     if(calc)calc.textContent=(eFraction===.5?'½ Nửa công':'1 Đủ công')+' = '+money2(pay);
   }
 
-  const originalOpenEdit=window.openEdit;
-  window.openEdit=function(name,date){
-    if(typeof originalOpenEdit==='function')originalOpenEdit(name,date);
-    const r=rec(data.workshops[active],name,date);
-    eFraction=Number(r&&r.workFraction||1)===.5?.5:1;
+  function openEditDirect(name,date){
+    const w=data.workshops[active];
+    if(!w)return;
+    const k=key(w,name,date);
+    const r=data.records[k];
+    if(!r)return toast('Ngày này chưa có chấm công');
+
+    editKey=k;
+    editOriginalKey=k;
+    editType=r.type||'xuong';
+    eFraction=Number(r.workFraction||1)===0.5?0.5:1;
+
+    const info=document.getElementById('editInfo');
+    const eDate=document.getElementById('eDate');
+    const eIn=document.getElementById('eIn');
+    const eOut=document.getElementById('eOut');
+    const eWage=document.getElementById('eWage');
+    const eOM=document.getElementById('eOTMorning');
+    const eOE=document.getElementById('eOTEve');
+    const eRate=document.getElementById('eOTRate');
+
+    if(info)info.textContent=name+' · '+date+' · chỉnh trực tiếp hoặc xóa ngày công này';
+    if(eDate)eDate.value=date;
+    if(eIn)eIn.value=r.in||'';
+    if(eOut)eOut.value=r.out||'';
+    if(eWage)eWage.value=Number(r.wage||0);
+    if(eOM)eOM.value=Number(r.otMorning||0);
+    if(eOE)eOE.value=Number(r.otEvening||0);
+    if(eRate)eRate.value=Number(r.otRate||w.ot||0);
+
+    if(typeof markEditType==='function')markEditType();
     ensureEditFraction();
     updateEditFraction();
-    const info=document.getElementById('editInfo');
-    if(info && r) info.textContent=name+' · '+date+' · chỉnh trực tiếp hoặc xóa ngày công này';
-  };
+    if(typeof updateEditCalc==='function')updateEditCalc();
 
-  const originalChooseEditType=window.chooseEditType;
+    const modal=document.getElementById('editModal');
+    if(modal)modal.classList.add('show');
+  }
+
+  window.openEdit=function(name,date){openEditDirect(name,date)};
+
   window.chooseEditType=function(t){
-    if(typeof originalChooseEditType==='function')originalChooseEditType(t);else editType=t;
+    editType=t;
+    if(typeof markEditType==='function')markEditType();
     updateEditFraction();
+    if(typeof updateEditCalc==='function')updateEditCalc();
   };
 
   window.saveEdit=function(){
     if(!editKey)return;
     const date=document.getElementById('eDate').value;
-    const name=editKey.split('|')[1];
+    if(!date)return toast('Chọn ngày');
+    const parts=editOriginalKey.split('|');
+    const name=parts[1]||'';
     const w=data.workshops[active];
     const wage=baseWage(editType)*eFraction;
     const om=Number(document.getElementById('eOTMorning').value||0);
@@ -165,7 +197,9 @@
     const nk=key(w,name,date);
     if(nk!==editOriginalKey)delete data.records[editOriginalKey];
     data.records[nk]={in:document.getElementById('eIn').value,out:document.getElementById('eOut').value,type:editType,wage,workFraction:eFraction,otMorning:om,otEvening:oe,otRate:orate};
-    save();closeM('editModal');toast('Đã lưu chấm công');
+    save();
+    closeM('editModal');
+    toast('Đã lưu chấm công');
   };
 
   window.removeEdit=function(){
@@ -177,7 +211,6 @@
     const date=parts[2]||'';
     if(!confirm('Xóa chấm công của '+employee+' ngày '+date+'?'))return;
     delete data.records[editOriginalKey];
-    if(editKey && editKey!==editOriginalKey)delete data.records[editKey];
     save();
     closeM('editModal');
     toast('Đã xóa ngày chấm công');
@@ -188,8 +221,7 @@
     const table=document.querySelector('#content table.grid');
     if(!table)return;
     const ym=String(month||'');
-    const bodyRows=table.querySelectorAll('tbody tr');
-    bodyRows.forEach(function(tr){
+    table.querySelectorAll('tbody tr').forEach(function(tr){
       const cells=tr.querySelectorAll('td');
       if(!cells.length)return;
       const name=(cells[0].textContent||'').trim();
@@ -198,18 +230,22 @@
         if(!td.classList.contains('daycell'))continue;
         if(!(td.classList.contains('worked')||td.classList.contains('construction')))continue;
         if(td.querySelector('.tt-edit-day-btn'))continue;
-        const day=String(i).padStart(2,'0');
-        const date=ym+'-'+day;
+        const date=ym+'-'+String(i).padStart(2,'0');
         const btn=document.createElement('button');
         btn.type='button';
         btn.className='tt-edit-day-btn noPrint';
         btn.textContent='✏️ Sửa/Xóa';
-        btn.style.cssText='display:block;margin:4px auto 0;padding:4px 7px;border:0;border-radius:6px;background:#667085;color:#fff;font-size:9px;font-weight:700;line-height:1.2;position:relative;z-index:5;';
-        btn.addEventListener('click',function(ev){
+        btn.style.cssText='display:block;margin:4px auto 0;padding:5px 7px;border:0;border-radius:6px;background:#667085;color:#fff;font-size:9px;font-weight:700;line-height:1.2;position:relative;z-index:20;touch-action:manipulation;';
+        btn.onclick=function(ev){
+          if(ev){ev.preventDefault();ev.stopPropagation();}
+          openEditDirect(name,date);
+          return false;
+        };
+        btn.addEventListener('touchend',function(ev){
           ev.preventDefault();
           ev.stopPropagation();
-          if(typeof window.openEdit==='function') window.openEdit(name,date);
-        },false);
+          openEditDirect(name,date);
+        },{passive:false});
         td.appendChild(btn);
       }
     });
