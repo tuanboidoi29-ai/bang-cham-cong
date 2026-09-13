@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>TT - Bảng chấm công</title>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f3f6fa}iframe{display:block;border:0;width:100%;height:100%;}</style>
+</head>
+<body>
+<iframe id="ttApp" src="./index.html?v=editfix20260914"></iframe>
+<script>
+(function(){
+  var frame=document.getElementById('ttApp');
+  frame.addEventListener('load',function(){
+    var w=frame.contentWindow,d=w.document;
+    d.addEventListener('click',function(e){
+      var b=e.target.closest&&e.target.closest('.tt-edit-day-btn');
+      if(!b)return;
+      e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+      var td=b.closest('td.daycell'),tr=b.closest('tr');
+      if(!td||!tr)return;
+      var cells=Array.prototype.slice.call(tr.querySelectorAll('td'));
+      var day=cells.indexOf(td);
+      if(day<1)return;
+      var name=(cells[0].textContent||'').trim();
+      var mi=d.querySelector('input[type="month"]');
+      var ym=mi&&mi.value?mi.value:new Date().toISOString().slice(0,7);
+      var date=ym+'-'+String(day).padStart(2,'0');
+      try{if(typeof w.openEdit==='function')w.openEdit(name,date);}catch(err){console.error(err);}
+      var modal=d.getElementById('editModal');
+      if(modal)modal.classList.add('show');
+    },true);
+  });
+})();
+</script>
+</body>
+</html>
