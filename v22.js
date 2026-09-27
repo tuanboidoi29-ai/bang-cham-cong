@@ -40,11 +40,12 @@
     block.id='ttFraction';
     block.setAttribute('data-tt-punch-fraction','1');
     block.style.margin='14px 0';
-    block.innerHTML='<div style="font-size:16px;font-weight:800;margin-bottom:8px">📅 CHỌN SỐ CÔNG</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button id="ttHalf" type="button" style="min-height:70px;background:#f59e0b;color:white;font-size:18px">½<br><small>Nửa công</small></button><button id="ttFull" type="button" style="min-height:70px;background:#087443;color:white;font-size:18px">1<br><small>Đủ công</small></button></div><div id="ttCalc" class="hint" style="margin-top:7px;font-weight:800"></div>';
+    block.innerHTML='<div style="font-size:16px;font-weight:800;margin-bottom:8px">📅 CHỌN SỐ CÔNG</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button id="ttHalf" type="button" style="min-height:70px;background:#f59e0b;color:white;font-size:18px">½<br><small>Nửa công</small></button><button id="ttFull" type="button" style="min-height:70px;background:#087443;color:white;font-size:18px">1<br><small>Đủ công</small></button></div><label style="display:block;margin-top:10px;font-weight:800">Tự nhập số công</label><input id="ttCustomFraction" type="number" min="0" step="0.25" inputmode="decimal" value="1" style="width:100%;margin-top:6px;padding:12px;border:1px solid #cbd5e1;border-radius:10px;font-size:18px"><div class="hint" style="margin-top:5px">Ví dụ: 0.25 · 0.5 · 0.75 · 1 · 1.5 · 2</div><div id="ttCalc" class="hint" style="margin-top:7px;font-weight:800"></div>';
     const wageRow=wage.parentNode;
     wageRow.parentNode.insertBefore(block,wageRow);
     document.getElementById('ttHalf').onclick=function(){pFraction=.5;updatePunchFraction()};
     document.getElementById('ttFull').onclick=function(){pFraction=1;updatePunchFraction()};
+    document.getElementById('ttCustomFraction').oninput=function(){const v=Number(this.value);if(Number.isFinite(v)&&v>=0){pFraction=v;updatePunchFraction(true)}};
     return block;
   }
 
@@ -55,11 +56,13 @@
     const f=document.getElementById('ttFull');
     if(h)h.style.outline=pFraction===.5?'4px solid #1677ff':'none';
     if(f)f.style.outline=pFraction===1?'4px solid #1677ff':'none';
+    const custom=document.getElementById('ttCustomFraction');
+    if(custom && document.activeElement!==custom) custom.value=String(pFraction);
     const pay=baseWage(pType)*pFraction;
     const wage=document.getElementById('pWage');
     if(wage){wage.value=pay;wage.readOnly=true}
     const calc=document.getElementById('ttCalc');
-    if(calc)calc.textContent=(pFraction===.5?'½ Nửa công':'1 Đủ công')+' = '+money2(pay);
+    if(calc){const label=pFraction===.5?'½ Nửa công':(pFraction===1?'1 Đủ công':pFraction+' công');calc.textContent=label+' = '+money2(pay)};
   }
 
   const originalOpenPunch=window.openPunch;
@@ -113,11 +116,12 @@
     block=document.createElement('div');
     block.id='ttEFraction';
     block.style.margin='14px 0';
-    block.innerHTML='<div style="font-size:16px;font-weight:800;margin-bottom:8px">📅 CHỌN SỐ CÔNG</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button id="ttEHalf" type="button" style="min-height:70px;background:#f59e0b;color:white;font-size:18px">½<br><small>Nửa công</small></button><button id="ttEFull" type="button" style="min-height:70px;background:#087443;color:white;font-size:18px">1<br><small>Đủ công</small></button></div><div id="ttECalc" class="hint" style="margin-top:7px;font-weight:800"></div>';
+    block.innerHTML='<div style="font-size:16px;font-weight:800;margin-bottom:8px">📅 CHỌN SỐ CÔNG</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button id="ttEHalf" type="button" style="min-height:70px;background:#f59e0b;color:white;font-size:18px">½<br><small>Nửa công</small></button><button id="ttEFull" type="button" style="min-height:70px;background:#087443;color:white;font-size:18px">1<br><small>Đủ công</small></button></div><label style="display:block;margin-top:10px;font-weight:800">Tự nhập số công</label><input id="ttECustomFraction" type="number" min="0" step="0.25" inputmode="decimal" value="1" style="width:100%;margin-top:6px;padding:12px;border:1px solid #cbd5e1;border-radius:10px;font-size:18px"><div id="ttECalc" class="hint" style="margin-top:7px;font-weight:800"></div>';
     const wageRow=wage.parentNode;
     wageRow.parentNode.insertBefore(block,wageRow);
     document.getElementById('ttEHalf').onclick=function(){eFraction=.5;updateEditFraction()};
     document.getElementById('ttEFull').onclick=function(){eFraction=1;updateEditFraction()};
+    document.getElementById('ttECustomFraction').oninput=function(){const v=Number(this.value);if(Number.isFinite(v)&&v>=0){eFraction=v;updateEditFraction()}};
     return block;
   }
 
@@ -128,11 +132,13 @@
     const f=document.getElementById('ttEFull');
     if(h)h.style.outline=eFraction===.5?'4px solid #1677ff':'none';
     if(f)f.style.outline=eFraction===1?'4px solid #1677ff':'none';
+    const custom=document.getElementById('ttECustomFraction');
+    if(custom && document.activeElement!==custom) custom.value=String(eFraction);
     const pay=baseWage(editType)*eFraction;
     const wage=document.getElementById('eWage');
     if(wage){wage.value=pay;wage.readOnly=true}
     const calc=document.getElementById('ttECalc');
-    if(calc)calc.textContent=(eFraction===.5?'½ Nửa công':'1 Đủ công')+' = '+money2(pay);
+    if(calc){const label=eFraction===.5?'½ Nửa công':(eFraction===1?'1 Đủ công':eFraction+' công');calc.textContent=label+' = '+money2(pay)};
   }
 
   function openEditDirect(name,date){
@@ -145,7 +151,7 @@
     editKey=k;
     editOriginalKey=k;
     editType=r.type||'xuong';
-    eFraction=Number(r.workFraction||1)===0.5?0.5:1;
+    eFraction=Math.max(0,Number(r.workFraction==null?1:r.workFraction)||0);
 
     const info=document.getElementById('editInfo');
     const eDate=document.getElementById('eDate');
