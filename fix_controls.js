@@ -70,13 +70,7 @@
   }
   window.TT_openData=openData;
 
-  function addDataButton(){
-    const tabs=byId('tabs'); if(!tabs)return;
-    if(!byId('ttDataBtnFixed')){
-      const b=document.createElement('button');b.id='ttDataBtnFixed';b.className='tab purple';b.textContent='💾 DỮ LIỆU';b.onclick=openData;tabs.appendChild(b);
-    }
-  }
-
+  function addDataButton(){ /* Dữ liệu do backup.js quản lý: chỉ giữ 1 nút */ }
   function openEditFromButton(btn){
     try{
       const td=btn.closest('td.daycell');
