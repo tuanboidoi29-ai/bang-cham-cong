@@ -77,13 +77,29 @@ table{background:#fff}th{background:#f3f7fc;color:#475569;border-color:#e4ebf4}t
  .row{gap:7px}.row button{min-height:44px}.choice button{min-height:74px}.tableWrap{border-radius:14px}
 }
 
+
+/* TT LIGHT UI 3.1 - visibly redesigned header */
+.ttHero{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,#ffffff 0%,#f8fbff 62%,#edf6ff 100%);border:1px solid #dce8f6!important;min-height:112px!important;padding:20px 22px!important;overflow:hidden;position:relative}
+.ttHero:after{content:"";position:absolute;width:210px;height:210px;border-radius:50%;right:-80px;top:-120px;background:radial-gradient(circle,rgba(36,134,255,.16),rgba(36,134,255,0) 70%);pointer-events:none}
+.ttBrand{display:flex;align-items:center;gap:14px;position:relative;z-index:1}.ttLogo{width:58px;height:58px;border-radius:18px;background:linear-gradient(145deg,#2488ff,#075fd5);display:grid;place-items:center;color:#fff;font-size:22px;font-weight:950;box-shadow:0 10px 24px rgba(22,119,255,.30)}
+.ttEyebrow{font-size:10px;font-weight:900;letter-spacing:1.7px;color:#1677ff;margin-bottom:3px}.ttBrand h2{margin:0!important;font-size:28px!important;line-height:1!important;text-transform:none!important}.ttSub{font-size:12px;color:#7b8a9e;margin-top:6px;font-weight:600}
+.ttActions{align-items:center!important;position:relative;z-index:1}.ttClock{display:flex;flex-direction:column;align-items:flex-end;padding:0 5px 0 10px;color:#718096}.ttClock span{font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:800}.ttClock b{font-size:15px;color:#1f2a3a;margin-top:2px}.ttIconBtn{border-radius:15px!important;min-height:48px!important;padding:10px 15px!important}
+.ttMobileTitle{display:none}
+@media(max-width:600px){
+ .ttHero{min-height:116px!important;border-radius:24px!important;padding:16px!important;align-items:center!important}
+ .ttLogo{width:48px;height:48px;border-radius:15px;font-size:18px}.ttBrand{gap:10px}.ttEyebrow{font-size:8px;letter-spacing:1.2px}.ttBrand h2{font-size:21px!important;max-width:none!important}.ttSub{font-size:10px;margin-top:4px}
+ .ttActions{max-width:none!important;display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important}.ttClock{grid-column:1/3;align-items:flex-end;padding:0 2px 2px}.ttClock span{display:none}.ttClock b{font-size:12px}
+ .ttIconBtn{font-size:12px!important;min-height:42px!important;padding:8px 10px!important}.ttIconBtn span{display:none}
+ .ttMobileTitle{display:flex;margin:10px 3px 0;align-items:center;gap:7px;color:#62748b;font-size:10px;font-weight:900;letter-spacing:.7px}.ttMobileTitle span:last-child{margin-left:auto;background:#e8f2ff;color:#1677ff;border-radius:999px;padding:4px 7px;font-size:9px}.ttStatusDot{width:8px;height:8px;border-radius:50%;background:#13b981;box-shadow:0 0 0 4px rgba(19,185,129,.12)}
+}
+
 </style>
 <!-- TT stable standalone 21 -->
 <!-- TT UI stable: no external scripts / PDF isolated -->
 </head>
 <body>
 <div class="app">
-<div class="top noPrint"><h2>🕘 TT - BẢNG CHẤM CÔNG</h2><div class="controls"><button class="green" onclick="jpgExportWorkshop()">📸 Xuất JPG & Gửi Zalo</button><button class="orange" onclick="openAutoBackups()">🗂️ Bản sao lưu</button><b id="clock"></b></div></div>
+<header class="top ttHero noPrint"><div class="ttBrand"><div class="ttLogo">TT</div><div><div class="ttEyebrow">TRẦN TUẤN · WORKSPACE</div><h2>Bảng chấm công</h2><div class="ttSub">Quản lý công việc & tiền lương</div></div></div><div class="controls ttActions"><div class="ttClock"><span>Hôm nay</span><b id="clock"></b></div><button class="ttIconBtn green" onclick="jpgExportWorkshop()">📸 <span>Xuất & Zalo</span></button><button class="ttIconBtn orange" onclick="openAutoBackups()">☁️ <span>Sao lưu</span></button></div></header><div class="ttMobileTitle noPrint"><span class="ttStatusDot"></span><b>TT CHẤM CÔNG</b><span>LIGHT 3.1</span></div>
 <div id="tabs" class="tabs noPrint"></div>
 <div id="content"></div>
 </div>
@@ -544,6 +560,5 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
 setTimeout(function(){try{startAutoBackupScheduler()}catch(e){console.error('backup scheduler',e)}},500);
 setTimeout(function(){try{syncCloudBackup(false)}catch(e){console.error('cloud sync',e)}},2500);
 </script>
-<script src="backup.js?v=1"></script>
 </body>
 </html>
