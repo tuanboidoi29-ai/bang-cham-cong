@@ -37,6 +37,7 @@ th{background:#f1f5f9}th,td{border-color:#e2e8f0}
  .stat{padding:9px;font-size:13px}.summaryTotal{font-size:15px}
  .box{padding:14px;border-radius:18px}.tableWrap{margin-left:-4px;margin-right:-4px}
 }
+.summaryPicker{margin:14px 0;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px}.summaryPickerGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.summaryPick{display:flex;align-items:center;gap:9px;padding:11px;border:1px solid #dbe4ef;border-radius:13px;background:#fff;font-weight:800;cursor:pointer}.summaryPick:has(input:checked){border-color:#7c3aed;background:#f5f0ff;box-shadow:0 0 0 2px #7c3aed20}.summaryPick input{width:20px;height:20px;accent-color:#7c3aed}.summaryHero{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:12px 0}.summaryHero .stat{min-height:72px;display:flex;flex-direction:column;justify-content:center}.summaryHero .big{font-size:20px;font-weight:900;margin-top:4px}@media(max-width:600px){.summaryPickerGrid{grid-template-columns:1fr 1fr}.summaryHero{grid-template-columns:1fr}.summaryHero .stat{min-height:58px}.summaryPick{padding:10px 8px;font-size:13px}}
 @media print{body{background:#fff}.noPrint{display:none!important}.app{max-width:none;padding:0}.card{box-shadow:none;padding:4px;margin:0 0 6px}.tableWrap{overflow:visible}.grid{min-width:0;width:100%}.grid th,.grid td{font-size:7px;padding:2px;min-width:0}.grid th:first-child,.grid td:first-child{position:static;min-width:55px}.sign{display:flex;justify-content:space-around;text-align:center;margin-top:22px}.sign div{width:220px}}
 </style>
 </head>
@@ -173,7 +174,7 @@ function printWorkshopStats(){
   const nowText=new Date().toLocaleString('vi-VN',{hour12:false});
   const html='<!doctype html><html><head><meta charset="utf-8"><title>Thống kê '+esc(w.name)+'</title><style>@page{size:A4 landscape;margin:10mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;font-size:11px}h1{text-align:center;font-size:20px;margin:0 0 4px}.sub{text-align:center;color:#555;margin-bottom:12px}.summary{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.s{border:1px solid #bbb;padding:7px 10px;border-radius:6px;font-weight:700}table{width:100%;border-collapse:collapse}th,td{border:1px solid #777;padding:5px;text-align:center}th{background:#eee}.left{text-align:left}tfoot td{font-weight:700;background:#f5f5f5}.sign{display:flex;justify-content:space-between;text-align:center;margin-top:28px;padding:0 60px}.sign div{width:220px}.note{margin-top:8px;font-size:10px;color:#555}</style></head><body><h1>BẢNG THỐNG KÊ CHẤM CÔNG</h1><div class="sub"><b>'+esc(w.name)+'</b> · Lập lúc '+esc(nowText)+'</div><div class="summary"><div class="s">Lượt chấm: '+rows.length+'</div><div class="s">Tổng số công: '+workCount+'</div><div class="s">Tăng ca: '+otHoursTotal.toFixed(2)+' giờ</div><div class="s">Tiền công: '+money(work)+'</div><div class="s">Tiền tăng ca: '+money(ot)+'</div><div class="s">TỔNG: '+money(work+ot)+'</div></div><table><thead><tr><th>Ngày</th><th>Âm lịch</th><th>Người</th><th>LX/CT</th><th>Số công</th><th>Giờ vào</th><th>Giờ ra</th><th>TC giờ</th><th>Tiền công</th><th>Tiền TC</th><th>Tổng</th></tr></thead><tbody>'+(body||'<tr><td colspan="11">Chưa có dữ liệu chấm công.</td></tr>')+'</tbody><tfoot><tr><td colspan="4">TỔNG CỘNG</td><td>'+workCount+'</td><td colspan="2"></td><td>'+otHoursTotal.toFixed(2)+'</td><td>'+money(work)+'</td><td>'+money(ot)+'</td><td>'+money(work+ot)+'</td></tr></tfoot></table><div class="note">LX = Làm xưởng · CT = Công trình</div><div class="sign"><div><b>Người lập bảng</b><br><br><br><br>________________</div><div><b>Người duyệt</b><br><br><br><br>________________</div></div><script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script>
 
-<script src="v22.js?v=a49afb44-single-final"></script>
+<script src="v22.js?v=summary-ui11"></script>
 </body></html>';
   const win=window.open('','_blank');
   if(!win){toast('Trình duyệt đang chặn cửa sổ xuất PDF');return}
@@ -384,10 +385,10 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
     const picked=data.workshops.filter(w=>useAll||selectedIds.includes(w.id));
     const rows=picked.map(w=>{const salary=totalSalary(w,month), adv=advTotal(w.id,month), people=salaryData(w,month).length, days=salaryData(w,month).reduce((s,x)=>s+x.days,0);return {w,salary,adv,net:salary-adv,people,days}});
     const grand=rows.reduce((s,x)=>s+x.salary,0), ga=rows.reduce((s,x)=>s+x.adv,0), gn=rows.reduce((s,x)=>s+x.net,0);
-    const choices=data.workshops.map(w=>`<label style="display:flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #d7dee8;border-radius:10px;background:#fff"><input class="sumWorkshopPick" type="checkbox" value="${esc2(w.id)}" ${selectedIds.includes(w.id)?'checked':''}> <b>${esc2(w.name)}</b></label>`).join('');
+    const choices=data.workshops.map(w=>`<label class="summaryPick"><input class="sumWorkshopPick" type="checkbox" value="${esc2(w.id)}" ${selectedIds.includes(w.id)?'checked':''}><span>🏭 ${esc2(w.name)}</span></label>`).join('');
     c.innerHTML=`<div class="card summaryBox"><div class="bar"><div><div class="title">💰 TỔNG LƯƠNG</div><div class="hint">Chọn một hoặc nhiều xưởng để tính. Nếu không chọn xưởng nào, hệ thống tự tính tất cả các xưởng.</div></div><div class="controls"><label>Tháng</label><input id="sumM" type="month" value="${month}"></div></div>
-      <div style="margin:10px 0"><div style="font-weight:800;margin-bottom:7px">🏭 Xưởng cần tính</div><div style="display:flex;gap:7px;flex-wrap:wrap">${choices}</div><div class="hint" style="margin-top:6px">${useAll?'Đang tính: TẤT CẢ XƯỞNG':'Đang tính: '+picked.map(w=>esc2(w.name)).join(', ')}</div></div>
-      <div class="stats"><div class="stat">Tổng lương: <b>${fmt(grand)}</b></div><div class="stat">Tạm ứng: <b class="dangerText">${fmt(ga)}</b></div><div class="stat summaryTotal">CÒN PHẢI TRẢ: ${fmt(gn)}</div></div>
+      <div class="summaryPicker"><div style="font-weight:900;margin-bottom:8px">🏭 CHỌN XƯỞNG TÍNH LƯƠNG</div><div class="summaryPickerGrid">${choices}</div><div class="hint" style="margin-top:8px">${useAll?'✓ Không chọn xưởng nào → đang tính TẤT CẢ XƯỞNG':'✓ Đang tính '+picked.length+' xưởng: '+picked.map(w=>esc2(w.name)).join(', ')}</div></div>
+      <div class="summaryHero"><div class="stat">💵 Tổng lương<div class="big money">${fmt(grand)}</div></div><div class="stat">💸 Đã tạm ứng<div class="big dangerText">${fmt(ga)}</div></div><div class="stat summaryTotal">💰 CÒN PHẢI TRẢ<div class="big">${fmt(gn)}</div></div></div>
       <div class="tableWrap"><table><thead><tr><th>Xưởng</th><th>Số người</th><th>Ngày công</th><th>Tiền công + tăng ca</th><th>Tạm ứng</th><th>Còn phải trả</th></tr></thead><tbody>${rows.map(x=>`<tr><td class="left"><b>${esc2(x.w.name)}</b></td><td>${x.people}</td><td>${x.days}</td><td class="money">${fmt(x.salary)}</td><td>${fmt(x.adv)}</td><td class="summaryTotal">${fmt(x.net)}</td></tr>`).join('')}<tr><th>TỔNG</th><th>${rows.reduce((s,x)=>s+x.people,0)}</th><th>${rows.reduce((s,x)=>s+x.days,0)}</th><th>${fmt(grand)}</th><th>${fmt(ga)}</th><th>${fmt(gn)}</th></tr></tbody></table></div>
     </div>
     <div class="card"><div class="title">👤 Chi tiết theo người</div><div class="tableWrap"><table><thead><tr><th>Xưởng</th><th>Người</th><th>Ngày công</th><th>Lương</th><th>Tạm ứng</th><th>Còn nhận</th></tr></thead><tbody>${rows.flatMap(x=>salaryData(x.w,month).map(p=>{const a=allAdvForPerson(x.w.id,p.name,month);return `<tr><td>${esc2(x.w.name)}</td><td class="left">${esc2(p.name)}</td><td>${p.days}</td><td>${fmt(p.total)}</td><td>${fmt(a)}</td><td class="summaryTotal">${fmt(p.total-a)}</td></tr>`})).join('')||'<tr><td colspan="6" class="empty">Chưa có dữ liệu chấm công.</td></tr>'}</tbody></table></div></div>`;
@@ -408,11 +409,11 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
   setTimeout(function(){addTab();if(view==='summary')renderSummaryV12();},0);
 })();
 </script>
-<script src="v12.js?v=20260930-ui-new10"></script>
-<script src="backup.js?v=20260930-ui-new10"></script>
-<script src="fix-two-buttons.js?v=20260930-ui-new10"></script>
-<script src="fix_controls.js?v=20260930-ui-new10"></script>
+<script src="v12.js?v=20260930-summary-ui11"></script>
+<script src="backup.js?v=20260930-summary-ui11"></script>
+<script src="fix-two-buttons.js?v=20260930-summary-ui11"></script>
+<script src="fix_controls.js?v=20260930-summary-ui11"></script>
 
-<script src="v22.js?v=a49afb44-single-final"></script>
+<script src="v22.js?v=summary-ui11"></script>
 </body>
 </html>
