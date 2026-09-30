@@ -65,20 +65,35 @@ function removeEdit(){if(!editKey)return;if(!confirm('Xóa chấm công ngày n�
 function namesForMonth(w,Y,M){let s=new Set();Object.keys(data.records).forEach(k=>{if(!k.startsWith(w.id+'|'))return;let a=k.split('|'),d=a[2]||'';if(d.startsWith(Y+'-'+pad(M)+'-'))s.add(a[1])});return Array.from(s).sort((a,b)=>a.localeCompare(b,'vi'))}
 function workshopTotals(w,Y,M){let prefix=w.id+'|',days=0,workPay=0,otH=0,otPay=0,people=new Set();Object.keys(data.records).forEach(k=>{if(!k.startsWith(prefix))return;let a=k.split('|'),date=a[2]||'';if(!date.startsWith(Y+'-'+pad(M)+'-'))return;let r=data.records[k];people.add(a[1]);days++;workPay+=Number(r.wage||0);otH+=otHours(r);otPay+=otMoney(r)});return{days,people:people.size,workPay,otH,otPay,total:workPay+otPay}}
 function noteItems(w){
-  if(Array.isArray(w.notes))return w.notes;
-  if(w.note){w.notes=[{id:'n_old',text:String(w.note),createdAt:''}];delete w.note;localStorage.setItem(KEY,JSON.stringify(data));return w.notes}
-  w.notes=[];return w.notes;
+  if(!w)return[];
+  if(!Array.isArray(w.notes)){
+    w.notes=[];
+    if(w.note){w.notes.push({id:'n'+Date.now().toString(36),text:String(w.note),createdAt:''});delete w.note}
+    localStorage.setItem(KEY,JSON.stringify(data));
+  }
+  return w.notes;
+}
+function noteById(id){
+  const w=data.workshops[active];return w?noteItems(w).find(n=>String(n.id)===String(id)):null;
 }
 function renderWorkshopNoteList(){
-  const w=data.workshops[active];if(!w)return;
-  const list=noteItems(w),box=document.getElementById('workshopNoteList');if(!box)return;
-  box.innerHTML='<div style="font-weight:800;margin-bottom:8px">Danh sách ghi chú ('+list.length+')</div>'+
-    (list.length?list.slice().reverse().map(n=>'<div class="card" style="margin:7px 0;padding:10px"><div style="white-space:pre-wrap;text-align:left">'+esc(n.text)+'</div><div class="hint" style="margin-top:5px">'+esc(n.updatedAt||n.createdAt||'')+'</div><div class="controls" style="margin-top:7px"><button onclick="editWorkshopNote('+JSON.stringify(n.id)+')">✏️ Sửa</button><button class="danger" onclick="deleteWorkshopNote('+JSON.stringify(n.id)+')">Xóa</button></div></div>').join(''):'<div class="empty">Chưa có ghi chú.</div>');
+  const w=data.workshops[active],box=document.getElementById('workshopNoteList');if(!w||!box)return;
+  const list=noteItems(w);
+  box.innerHTML='<div style="font-weight:800;margin-bottom:8px">Danh sách ghi chú ('+list.length+')</div>';
+  if(!list.length){box.innerHTML+='<div class="empty">Chưa có ghi chú.</div>';return}
+  list.slice().reverse().forEach(n=>{
+    const item=document.createElement('div');item.className='card';item.style.cssText='margin:7px 0;padding:10px';
+    const txt=document.createElement('div');txt.style.cssText='white-space:pre-wrap;text-align:left';txt.textContent=n.text||'';
+    const time=document.createElement('div');time.className='hint';time.style.marginTop='5px';time.textContent=n.updatedAt||n.createdAt||'';
+    const ctr=document.createElement('div');ctr.className='controls';ctr.style.marginTop='7px';
+    const edit=document.createElement('button');edit.type='button';edit.textContent='✏️ Sửa';edit.onclick=function(){editWorkshopNote(n.id)};
+    const del=document.createElement('button');del.type='button';del.className='danger';del.textContent='🗑️ Xóa';del.onclick=function(){deleteWorkshopNote(n.id)};
+    ctr.append(edit,del);item.append(txt,time,ctr);box.appendChild(item);
+  });
 }
 function clearWorkshopNoteForm(){
-  document.getElementById('noteEditId').value='';
-  document.getElementById('workshopNote').value='';
-  document.getElementById('noteSaveBtn').textContent='＋ Lưu ghi chú';
+  const id=document.getElementById('noteEditId'),ta=document.getElementById('workshopNote'),btn=document.getElementById('noteSaveBtn');
+  if(id)id.value='';if(ta)ta.value='';if(btn)btn.textContent='＋ Lưu ghi chú';
 }
 function openWorkshopNote(){
   const w=data.workshops[active];if(!w)return;
@@ -86,23 +101,27 @@ function openWorkshopNote(){
   noteItems(w);clearWorkshopNoteForm();renderWorkshopNoteList();openM('noteModal');
 }
 function saveWorkshopNote(){
-  const w=data.workshops[active];if(!w)return;
-  const text=document.getElementById('workshopNote').value.trim();
-  if(!text){toast('Nhập nội dung ghi chú');return}
-  const list=noteItems(w),id=document.getElementById('noteEditId').value,stamp=new Date().toLocaleString('vi-VN',{hour12:false});
+  const w=data.workshops[active],ta=document.getElementById('workshopNote'),eid=document.getElementById('noteEditId');if(!w||!ta||!eid)return;
+  const value=ta.value.trim();if(!value){toast('Nhập nội dung ghi chú');return}
+  const list=noteItems(w),id=eid.value,stamp=new Date().toLocaleString('vi-VN',{hour12:false});
   if(id){
-    const n=list.find(x=>x.id===id);if(n){n.text=text;n.updatedAt='Sửa: '+stamp}
-  }else list.push({id:'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),text:text,createdAt:'Tạo: '+stamp});
-  localStorage.setItem(KEY,JSON.stringify(data));clearWorkshopNoteForm();renderWorkshopNoteList();toast(id?'Đã cập nhật ghi chú':'Đã lưu ghi chú');
+    const n=noteById(id);if(!n){toast('Không tìm thấy ghi chú cần sửa');return}
+    n.text=value;n.updatedAt='Sửa: '+stamp;
+  }else{
+    list.push({id:'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,8),text:value,createdAt:'Tạo: '+stamp});
+  }
+  localStorage.setItem(KEY,JSON.stringify(data));clearWorkshopNoteForm();renderWorkshopNoteList();toast(id?'Đã lưu thay đổi':'Đã lưu ghi chú');
 }
 function editWorkshopNote(id){
-  const w=data.workshops[active],n=w&&noteItems(w).find(x=>x.id===id);if(!n)return;
-  document.getElementById('noteEditId').value=id;document.getElementById('workshopNote').value=n.text;
-  document.getElementById('noteSaveBtn').textContent='💾 Lưu thay đổi';document.getElementById('workshopNote').focus();
+  const n=noteById(id);if(!n){toast('Không tìm thấy ghi chú');return}
+  const eid=document.getElementById('noteEditId'),ta=document.getElementById('workshopNote'),btn=document.getElementById('noteSaveBtn');
+  eid.value=String(n.id);ta.value=n.text||'';btn.textContent='💾 Lưu thay đổi';ta.focus();ta.scrollIntoView({behavior:'smooth',block:'center'});
 }
 function deleteWorkshopNote(id){
-  const w=data.workshops[active];if(!w||!confirm('Xóa ghi chú này?'))return;
-  w.notes=noteItems(w).filter(x=>x.id!==id);localStorage.setItem(KEY,JSON.stringify(data));clearWorkshopNoteForm();renderWorkshopNoteList();toast('Đã xóa ghi chú');
+  const w=data.workshops[active];if(!w)return;
+  const list=noteItems(w),idx=list.findIndex(n=>String(n.id)===String(id));if(idx<0){toast('Không tìm thấy ghi chú');return}
+  if(!confirm('Xóa ghi chú này?'))return;
+  list.splice(idx,1);localStorage.setItem(KEY,JSON.stringify(data));clearWorkshopNoteForm();renderWorkshopNoteList();toast('Đã xóa ghi chú');
 }
 function printWorkshopStats(){
   const w=data.workshops[active];if(!w)return;
@@ -347,11 +366,11 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
   setTimeout(function(){addTab();if(view==='summary')renderSummaryV12();},0);
 })();
 </script>
-<script src="v12.js?v=20260930-fix2"></script>
-<script src="backup.js?v=20260930-fix2"></script>
-<script src="fix-two-buttons.js?v=20260930-fix2"></script>
-<script src="fix_controls.js?v=20260930-fix2"></script>
-<script src="v22.js?v=20260930-fix2"></script>
+<script src="v12.js?v=20260930-note-fix3"></script>
+<script src="backup.js?v=20260930-note-fix3"></script>
+<script src="fix-two-buttons.js?v=20260930-note-fix3"></script>
+<script src="fix_controls.js?v=20260930-note-fix3"></script>
+<script src="v22.js?v=20260930-note-fix3"></script>
 <script src="backup.js?v=1"></script>
 </body>
 </html>
