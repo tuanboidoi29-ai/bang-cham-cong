@@ -367,26 +367,34 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
     const c=document.getElementById('content'); if(!c)return;
     const saved=JSON.parse(localStorage.getItem('TT_CC_SUMMARY_SELECTED')||'[]');
     const selectedIds=Array.isArray(saved)?saved:[];
+    const savedMonths=JSON.parse(localStorage.getItem('TT_CC_SUMMARY_MONTHS')||'[]');
+    const selectedMonths=Array.isArray(savedMonths)&&savedMonths.length?savedMonths:[month];
     const useAll=selectedIds.length===0;
-    const picked=data.workshops.filter(w=>useAll||selectedIds.includes(w.id));
-    const rows=picked.map(w=>{const salary=totalSalary(w,month), adv=advTotal(w.id,month), people=salaryData(w,month).length, days=salaryData(w,month).reduce((s,x)=>s+x.days,0);return {w,salary,adv,net:salary-adv,people,days}});
-    const grand=rows.reduce((s,x)=>s+x.salary,0), ga=rows.reduce((s,x)=>s+x.adv,0), gn=rows.reduce((s,x)=>s+x.net,0);
-    const choices=data.workshops.map(w=>`<label class="summaryPick"><input class="sumWorkshopPick" type="checkbox" value="${esc2(w.id)}" ${selectedIds.includes(w.id)?'checked':''}><span>🏭 ${esc2(w.name)}</span></label>`).join('');
-    c.innerHTML=`<div class="card summaryBox"><div class="bar"><div><div class="title">💰 TỔNG LƯƠNG</div><div class="hint">Chọn một hoặc nhiều xưởng để tính. Nếu không chọn xưởng nào, hệ thống tự tính tất cả các xưởng.</div></div><div class="controls"><label>Tháng</label><input id="sumM" type="month" value="${month}"></div></div>
-      <div class="summaryPicker"><div style="font-weight:900;margin-bottom:8px">🏭 CHỌN XƯỞNG TÍNH LƯƠNG</div><div class="summaryPickerGrid">${choices}</div><div class="hint" style="margin-top:8px">${useAll?'✓ Không chọn xưởng nào → đang tính TẤT CẢ XƯỞNG':'✓ Đang tính '+picked.length+' xưởng: '+picked.map(w=>esc2(w.name)).join(', ')}</div></div>
-      <div class="summaryHero"><div class="stat">💵 Tổng lương<div class="big money">${fmt(grand)}</div></div><div class="stat">💸 Đã tạm ứng<div class="big dangerText">${fmt(ga)}</div></div><div class="stat summaryTotal">💰 CÒN PHẢI TRẢ<div class="big">${fmt(gn)}</div></div></div>
-      <div class="tableWrap"><table><thead><tr><th>Xưởng</th><th>Số người</th><th>Ngày công</th><th>Tiền công + tăng ca</th><th>Tạm ứng</th><th>Còn phải trả</th></tr></thead><tbody>${rows.map(x=>`<tr><td class="left"><b>${esc2(x.w.name)}</b></td><td>${x.people}</td><td>${x.days}</td><td class="money">${fmt(x.salary)}</td><td>${fmt(x.adv)}</td><td class="summaryTotal">${fmt(x.net)}</td></tr>`).join('')}<tr><th>TỔNG</th><th>${rows.reduce((s,x)=>s+x.people,0)}</th><th>${rows.reduce((s,x)=>s+x.days,0)}</th><th>${fmt(grand)}</th><th>${fmt(ga)}</th><th>${fmt(gn)}</th></tr></tbody></table></div>
-    </div>
-    <div class="card"><div class="title">👤 Chi tiết theo người</div><div class="tableWrap"><table><thead><tr><th>Xưởng</th><th>Người</th><th>Ngày công</th><th>Lương</th><th>Tạm ứng</th><th>Còn nhận</th></tr></thead><tbody>${rows.flatMap(x=>salaryData(x.w,month).map(p=>{const a=allAdvForPerson(x.w.id,p.name,month);return `<tr><td>${esc2(x.w.name)}</td><td class="left">${esc2(p.name)}</td><td>${p.days}</td><td>${fmt(p.total)}</td><td>${fmt(a)}</td><td class="summaryTotal">${fmt(p.total-a)}</td></tr>`})).join('')||'<tr><td colspan="6" class="empty">Chưa có dữ liệu chấm công.</td></tr>'}</tbody></table></div></div>`;
-    document.getElementById('sumM').onchange=function(){month=this.value;render();};
-    document.querySelectorAll('.sumWorkshopPick').forEach(function(el){
-      el.onclick=function(ev){
-        ev.stopPropagation();
-        const ids=Array.prototype.slice.call(document.querySelectorAll('.sumWorkshopPick')).filter(function(x){return x.checked}).map(function(x){return x.value});
-        localStorage.setItem('TT_CC_SUMMARY_SELECTED',JSON.stringify(ids));
-        setTimeout(function(){renderSummaryV12()},0);
-      };
+    const picked=data.workshops.filter(function(w){return useAll||selectedIds.includes(w.id)});
+    const monthOptions=[];
+    const now=new Date(),cy=now.getFullYear();
+    for(let y=cy-2;y<=cy+1;y++)for(let m=1;m<=12;m++)monthOptions.push(y+'-'+String(m).padStart(2,'0'));
+    const monthChoices=monthOptions.reverse().map(function(ym){return '<label class="summaryPick"><input class="sumMonthPick" type="checkbox" value="'+ym+'" '+(selectedMonths.includes(ym)?'checked':'')+'><span>📅 '+ym.slice(5,7)+'/'+ym.slice(0,4)+'</span></label>'}).join('');
+    const rows=picked.map(function(w){
+      let salary=0,adv=0,days=0,peopleSet={};
+      selectedMonths.forEach(function(ym){
+        salary+=totalSalary(w,ym);adv+=advTotal(w.id,ym);
+        salaryData(w,ym).forEach(function(p){days+=Number(p.days)||0;peopleSet[p.name]=1});
+      });
+      return {w:w,salary:salary,adv:adv,net:salary-adv,people:Object.keys(peopleSet).length,days:days};
     });
+    const grand=rows.reduce((s,x)=>s+x.salary,0),ga=rows.reduce((s,x)=>s+x.adv,0),gn=rows.reduce((s,x)=>s+x.net,0);
+    const choices=data.workshops.map(w=>`<label class="summaryPick"><input class="sumWorkshopPick" type="checkbox" value="${esc2(w.id)}" ${selectedIds.includes(w.id)?'checked':''}><span>🏭 ${esc2(w.name)}</span></label>`).join('');
+    const detail=[];
+    rows.forEach(function(x){selectedMonths.forEach(function(ym){salaryData(x.w,ym).forEach(function(p){const a=allAdvForPerson(x.w.id,p.name,ym);detail.push('<tr><td>'+esc2(x.w.name)+'</td><td>'+ym.slice(5,7)+'/'+ym.slice(0,4)+'</td><td class="left">'+esc2(p.name)+'</td><td>'+p.days+'</td><td>'+fmt(p.total)+'</td><td>'+fmt(a)+'</td><td class="summaryTotal">'+fmt(p.total-a)+'</td></tr>')})})});
+    c.innerHTML=`<div class="card summaryBox"><div class="bar"><div><div class="title">💰 TỔNG LƯƠNG</div><div class="hint">Có thể chọn nhiều xưởng và nhiều tháng để cộng tổng.</div></div></div>
+      <div class="summaryPicker"><div style="font-weight:900;margin-bottom:8px">📅 CHỌN THÁNG TÍNH LƯƠNG</div><div class="summaryPickerGrid">${monthChoices}</div><div class="hint" style="margin-top:8px">✓ Đang tính ${selectedMonths.length} tháng: ${selectedMonths.map(x=>x.slice(5,7)+'/'+x.slice(0,4)).join(', ')}</div></div>
+      <div class="summaryPicker"><div style="font-weight:900;margin-bottom:8px">🏭 CHỌN XƯỞNG TÍNH LƯƠNG</div><div class="summaryPickerGrid">${choices}</div><div class="hint" style="margin-top:8px">${useAll?'✓ Không chọn xưởng nào → đang tính TẤT CẢ XƯỞNG':'✓ Đang tính '+picked.length+' xưởng'}</div></div>
+      <div class="summaryHero"><div class="stat">💵 Tổng lương<div class="big money">${fmt(grand)}</div></div><div class="stat">💸 Đã tạm ứng<div class="big dangerText">${fmt(ga)}</div></div><div class="stat summaryTotal">💰 CÒN PHẢI TRẢ<div class="big">${fmt(gn)}</div></div></div>
+      <div class="tableWrap"><table><thead><tr><th>Xưởng</th><th>Số người</th><th>Ngày công</th><th>Tiền công + tăng ca</th><th>Tạm ứng</th><th>Còn phải trả</th></tr></thead><tbody>${rows.map(x=>`<tr><td class="left"><b>${esc2(x.w.name)}</b></td><td>${x.people}</td><td>${x.days}</td><td class="money">${fmt(x.salary)}</td><td>${fmt(x.adv)}</td><td class="summaryTotal">${fmt(x.net)}</td></tr>`).join('')}<tr><th>TỔNG</th><th>${rows.reduce((s,x)=>s+x.people,0)}</th><th>${rows.reduce((s,x)=>s+x.days,0)}</th><th>${fmt(grand)}</th><th>${fmt(ga)}</th><th>${fmt(gn)}</th></tr></tbody></table></div></div>
+      <div class="card"><div class="title">👤 Chi tiết theo người / tháng</div><div class="tableWrap"><table><thead><tr><th>Xưởng</th><th>Tháng</th><th>Người</th><th>Ngày công</th><th>Lương</th><th>Tạm ứng</th><th>Còn nhận</th></tr></thead><tbody>${detail.join('')||'<tr><td colspan="7" class="empty">Chưa có dữ liệu chấm công.</td></tr>'}</tbody></table></div></div>`;
+    document.querySelectorAll('.sumWorkshopPick').forEach(function(el){el.onclick=function(ev){ev.stopPropagation();const ids=Array.prototype.slice.call(document.querySelectorAll('.sumWorkshopPick')).filter(x=>x.checked).map(x=>x.value);localStorage.setItem('TT_CC_SUMMARY_SELECTED',JSON.stringify(ids));setTimeout(renderSummaryV12,0)}});
+    document.querySelectorAll('.sumMonthPick').forEach(function(el){el.onclick=function(ev){ev.stopPropagation();const ms=Array.prototype.slice.call(document.querySelectorAll('.sumMonthPick')).filter(x=>x.checked).map(x=>x.value);if(!ms.length){el.checked=true;return}localStorage.setItem('TT_CC_SUMMARY_MONTHS',JSON.stringify(ms));setTimeout(renderSummaryV12,0)}});
   }
 
   const originalRender=window.render;
