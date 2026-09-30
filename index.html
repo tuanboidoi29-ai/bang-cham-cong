@@ -45,7 +45,7 @@ th{background:#f1f5f9}th,td{border-color:#e2e8f0}
 </head>
 <body>
 <div class="app">
-<div class="top noPrint"><h2>🕘 TT - BẢNG CHẤM CÔNG</h2><div class="controls"><button class="green" onclick="jpgExportWorkshop()">📸 Xuất JPG & Gửi Zalo</button><button class="purple" onclick="exportBackup()">💾 Xuất dữ liệu</button><button class="gray" onclick="document.getElementById('backupImport').click()">📥 Nhập dữ liệu</button><input id="backupImport" type="file" accept=".json,application/json" style="display:none" onchange="importBackup(this)"><b id="clock"></b></div></div>
+<div class="top noPrint"><h2>🕘 TT - BẢNG CHẤM CÔNG</h2><div class="controls"><button class="green" onclick="jpgExportWorkshop()">📸 Xuất JPG & Gửi Zalo</button><button class="purple" onclick="exportBackup()">💾 Xuất dữ liệu</button><button class="gray" onclick="document.getElementById('backupImport').click()">📥 Nhập dữ liệu</button><button class="orange" onclick="openAutoBackups()">🗂️ Bản sao lưu</button><input id="backupImport" type="file" accept=".json,application/json" style="display:none" onchange="importBackup(this)"><b id="clock"></b></div></div>
 <div id="tabs" class="tabs noPrint"></div>
 <div id="content"></div>
 </div>
@@ -87,10 +87,24 @@ function autoMonthEndBackup(){
     const name='TT_Cham_Cong_Tu_Dong_'+ym+'.json';
     downloadBackupBlob(blob,name);
     localStorage.setItem(flag,new Date().toISOString());
-    localStorage.setItem('TT_CC_LAST_AUTO_BACKUP',JSON.stringify(payload));
+    localStorage.setItem('TT_CC_LAST_AUTO_BACKUP',JSON.stringify(payload));let list=[];try{list=JSON.parse(localStorage.getItem('TT_CC_AUTO_BACKUPS')||'[]')}catch(e){};list=list.filter(x=>x&&x.month!==ym);list.unshift(payload);localStorage.setItem('TT_CC_AUTO_BACKUPS',JSON.stringify(list.slice(0,24)));
     toast('Đã tự động sao lưu dữ liệu cuối tháng '+pad(d.getMonth()+1)+'/'+d.getFullYear());
   }catch(e){}
 }
+function getAutoBackups(){try{let a=JSON.parse(localStorage.getItem('TT_CC_AUTO_BACKUPS')||'[]');if(Array.isArray(a)&&a.length)return a}catch(e){}try{let x=JSON.parse(localStorage.getItem('TT_CC_LAST_AUTO_BACKUP')||'null');return x?[x]:[]}catch(e){return[]}}
+function openAutoBackups(){
+  let list=getAutoBackups(),m=document.getElementById('autoBackupModal');
+  if(!m){m=document.createElement('div');m.id='autoBackupModal';m.className='modal';m.innerHTML='<div class="box" style="width:min(760px,98%)"><div id="autoBackupContent"></div></div>';document.body.appendChild(m)}
+  let rows=list.map((x,i)=>'<div class="card"><div class="bar"><div><b>💾 '+esc(x.month||'Bản sao lưu')+'</b><div class="hint">'+esc(x.exportedAt?new Date(x.exportedAt).toLocaleString('vi-VN'):'')+'</div></div><div class="controls"><button class="green" onclick="restoreAutoBackup('+i+')">🔄 CẬP NHẬT / KHÔI PHỤC</button><button class="purple" onclick="downloadAutoBackup('+i+')">⬇️ Tải bản sao</button></div></div></div>').join('');
+  document.getElementById('autoBackupContent').innerHTML='<div class="bar"><div><h3 style="margin:0">🗂️ CÁC BẢN SAO LƯU TỰ ĐỘNG</h3><div class="hint">Dùng Cập nhật / Khôi phục khi dữ liệu hiện tại bị mất hoặc sai.</div></div><button class="gray" onclick="closeM(\'autoBackupModal\')">Đóng</button></div>'+(rows||'<div class="empty">Chưa có bản sao lưu tự động.</div>');
+  m.classList.add('show');
+}
+function restoreAutoBackup(i){
+  let x=getAutoBackups()[i];if(!x||!x.data)return toast('Không tìm thấy bản sao lưu');
+  if(!confirm('Khôi phục dữ liệu từ bản sao lưu '+(x.month||'')+'? Dữ liệu hiện tại sẽ được thay bằng bản sao này.'))return;
+  data=x.data;localStorage.setItem(KEY,JSON.stringify(data));active=0;closeM('autoBackupModal');render();toast('Đã khôi phục dữ liệu từ bản sao lưu '+(x.month||''));
+}
+function downloadAutoBackup(i){let x=getAutoBackups()[i];if(!x)return;downloadBackupBlob(new Blob([JSON.stringify(x,null,2)],{type:'application/json;charset=utf-8'}),'TT_Cham_Cong_Tu_Dong_'+(x.month||'backup')+'.json')}
 function downloadBackupBlob(blob,name){
   try{
     const url=URL.createObjectURL(blob),a=document.createElement('a');
@@ -450,7 +464,5 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
   setTimeout(function(){addTab();if(view==='summary')renderSummaryV12();},0);
 })();
 </script>
-
-<script src="v22.js?v=a49afb44-single-final"></script>
 </body>
 </html>
