@@ -22,7 +22,7 @@
 <div id="punchModal" class="modal"><div class="box"><h3>🟢 CHẤM CÔNG</h3><div class="hint" id="punchWorkshop"></div><div class="row"><input id="pName" placeholder="Tên người chấm công"></div><div class="row"><input id="pDate" type="date"></div><div class="choice"><button id="btnLX" class="green" onclick="chooseType('xuong')">🏭<br>LX<br><small>Làm xưởng</small></button><button id="btnCT" class="orange" onclick="chooseType('congtrinh')">🏗<br>CT<br><small>Công trình</small></button></div><div class="row"><input id="pWage" type="number" min="0" inputmode="numeric" placeholder="Tiền lương/ngày"></div><div class="otbox"><div class="field"><label>🌅 Tăng ca sáng (giờ)</label><input id="pOTMorning" type="number" min="0" step="0.25" inputmode="decimal" value="0"></div><div class="field"><label>🌙 Tăng ca tối (giờ)</label><input id="pOTEve" type="number" min="0" step="0.25" inputmode="decimal" value="0"></div></div><div class="row"><input id="pOTRate" type="number" min="0" step="1000" inputmode="numeric" placeholder="Tiền tăng ca / giờ"></div><div class="hint">Chấm ngày nào thì chọn ngày đó. Lần 1 ghi giờ vào · lần 2 ghi giờ ra. Tổng tiền tăng ca = (tăng ca sáng + tăng ca tối) × tiền tăng ca/giờ.</div><div class="row"><button class="green" onclick="doPunch()">Xác nhận chấm công</button><button class="gray" onclick="closeM('punchModal')">Hủy</button></div></div></div>
 
 <div id="editModal" class="modal"><div class="box"><h3>✏️ Sửa chấm công</h3><div id="editInfo" class="hint"></div><div class="row"><input id="eDate" type="date"><input id="eIn" type="time" step="1"><input id="eOut" type="time" step="1"></div><div class="choice"><button id="eLX" class="green" onclick="chooseEditType('xuong')">🏭 LX<br><small>Làm xưởng</small></button><button id="eCT" class="orange" onclick="chooseEditType('congtrinh')">🏗 CT<br><small>Công trình</small></button></div><div class="row"><input id="eWage" type="number" min="0" inputmode="numeric" placeholder="Tiền lương/ngày"></div><div class="otbox"><div class="field"><label>🌅 Tăng ca sáng (giờ)</label><input id="eOTMorning" type="number" min="0" step="0.25" inputmode="decimal"></div><div class="field"><label>🌙 Tăng ca tối (giờ)</label><input id="eOTEve" type="number" min="0" step="0.25" inputmode="decimal"></div></div><div class="row"><input id="eOTRate" type="number" min="0" step="1000" inputmode="numeric" placeholder="Tiền tăng ca / giờ"></div><div class="hint" id="editCalc"></div><div class="row"><button class="green" onclick="saveEdit()">Lưu</button><button class="danger" onclick="removeEdit()">Xóa</button><button class="gray" onclick="closeM('editModal')">Hủy</button></div></div></div>
-<div id="noteModal" class="modal"><div class="box"><h3>📝 GHI CHÚ XƯỞNG</h3><div class="hint" id="noteWorkshop"></div><div class="row"><textarea id="workshopNote" rows="7" style="width:100%;resize:vertical" placeholder="Nhập ghi chú công việc, nghỉ, ứng lương hoặc nội dung cần nhớ..."></textarea></div><div class="row"><button class="green" onclick="saveWorkshopNote()">Lưu ghi chú</button><button class="gray" onclick="closeM('noteModal')">Đóng</button></div></div></div>
+<div id="noteModal" class="modal"><div class="box" style="width:min(760px,96%)"><h3>📝 GHI CHÚ XƯỞNG</h3><div class="hint" id="noteWorkshop"></div><input id="noteEditId" type="hidden"><div class="row"><textarea id="workshopNote" rows="4" style="width:100%;resize:vertical" placeholder="Nhập ghi chú công việc, nghỉ, ứng lương hoặc nội dung cần nhớ..."></textarea></div><div class="row"><button class="green" id="noteSaveBtn" onclick="saveWorkshopNote()">＋ Lưu ghi chú</button><button class="gray" onclick="clearWorkshopNoteForm()">Nhập mới</button><button class="gray" onclick="closeM('noteModal')">Đóng</button></div><div id="workshopNoteList" style="margin-top:14px"></div></div></div>
 <div id="toast" class="toast"></div>
 
 <script>
@@ -64,17 +64,45 @@ function saveEdit(){if(!editKey)return;let date=document.getElementById('eDate')
 function removeEdit(){if(!editKey)return;if(!confirm('Xóa chấm công ngày này?'))return;delete data.records[editOriginalKey];if(editKey!==editOriginalKey)delete data.records[editKey];save();closeM('editModal');toast('Đã xóa')}
 function namesForMonth(w,Y,M){let s=new Set();Object.keys(data.records).forEach(k=>{if(!k.startsWith(w.id+'|'))return;let a=k.split('|'),d=a[2]||'';if(d.startsWith(Y+'-'+pad(M)+'-'))s.add(a[1])});return Array.from(s).sort((a,b)=>a.localeCompare(b,'vi'))}
 function workshopTotals(w,Y,M){let prefix=w.id+'|',days=0,workPay=0,otH=0,otPay=0,people=new Set();Object.keys(data.records).forEach(k=>{if(!k.startsWith(prefix))return;let a=k.split('|'),date=a[2]||'';if(!date.startsWith(Y+'-'+pad(M)+'-'))return;let r=data.records[k];people.add(a[1]);days++;workPay+=Number(r.wage||0);otH+=otHours(r);otPay+=otMoney(r)});return{days,people:people.size,workPay,otH,otPay,total:workPay+otPay}}
+function noteItems(w){
+  if(Array.isArray(w.notes))return w.notes;
+  if(w.note){w.notes=[{id:'n_old',text:String(w.note),createdAt:''}];delete w.note;localStorage.setItem(KEY,JSON.stringify(data));return w.notes}
+  w.notes=[];return w.notes;
+}
+function renderWorkshopNoteList(){
+  const w=data.workshops[active];if(!w)return;
+  const list=noteItems(w),box=document.getElementById('workshopNoteList');if(!box)return;
+  box.innerHTML='<div style="font-weight:800;margin-bottom:8px">Danh sách ghi chú ('+list.length+')</div>'+
+    (list.length?list.slice().reverse().map(n=>'<div class="card" style="margin:7px 0;padding:10px"><div style="white-space:pre-wrap;text-align:left">'+esc(n.text)+'</div><div class="hint" style="margin-top:5px">'+esc(n.updatedAt||n.createdAt||'')+'</div><div class="controls" style="margin-top:7px"><button onclick="editWorkshopNote('+JSON.stringify(n.id)+')">✏️ Sửa</button><button class="danger" onclick="deleteWorkshopNote('+JSON.stringify(n.id)+')">Xóa</button></div></div>').join(''):'<div class="empty">Chưa có ghi chú.</div>');
+}
+function clearWorkshopNoteForm(){
+  document.getElementById('noteEditId').value='';
+  document.getElementById('workshopNote').value='';
+  document.getElementById('noteSaveBtn').textContent='＋ Lưu ghi chú';
+}
 function openWorkshopNote(){
   const w=data.workshops[active];if(!w)return;
   document.getElementById('noteWorkshop').textContent=w.name;
-  document.getElementById('workshopNote').value=w.note||'';
-  openM('noteModal');
+  noteItems(w);clearWorkshopNoteForm();renderWorkshopNoteList();openM('noteModal');
 }
 function saveWorkshopNote(){
   const w=data.workshops[active];if(!w)return;
-  w.note=document.getElementById('workshopNote').value||'';
-  localStorage.setItem(KEY,JSON.stringify(data));
-  closeM('noteModal');render();toast('Đã lưu ghi chú');
+  const text=document.getElementById('workshopNote').value.trim();
+  if(!text){toast('Nhập nội dung ghi chú');return}
+  const list=noteItems(w),id=document.getElementById('noteEditId').value,stamp=new Date().toLocaleString('vi-VN',{hour12:false});
+  if(id){
+    const n=list.find(x=>x.id===id);if(n){n.text=text;n.updatedAt='Sửa: '+stamp}
+  }else list.push({id:'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),text:text,createdAt:'Tạo: '+stamp});
+  localStorage.setItem(KEY,JSON.stringify(data));clearWorkshopNoteForm();renderWorkshopNoteList();toast(id?'Đã cập nhật ghi chú':'Đã lưu ghi chú');
+}
+function editWorkshopNote(id){
+  const w=data.workshops[active],n=w&&noteItems(w).find(x=>x.id===id);if(!n)return;
+  document.getElementById('noteEditId').value=id;document.getElementById('workshopNote').value=n.text;
+  document.getElementById('noteSaveBtn').textContent='💾 Lưu thay đổi';document.getElementById('workshopNote').focus();
+}
+function deleteWorkshopNote(id){
+  const w=data.workshops[active];if(!w||!confirm('Xóa ghi chú này?'))return;
+  w.notes=noteItems(w).filter(x=>x.id!==id);localStorage.setItem(KEY,JSON.stringify(data));clearWorkshopNoteForm();renderWorkshopNoteList();toast('Đã xóa ghi chú');
 }
 function printWorkshopStats(){
   const w=data.workshops[active];if(!w)return;
