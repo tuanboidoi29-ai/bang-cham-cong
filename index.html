@@ -76,6 +76,21 @@ function exportBackup(){
     downloadBackupBlob(blob,name);
   }catch(e){toast('Không thể xuất dữ liệu')}
 }
+function autoMonthEndBackup(){
+  try{
+    const d=new Date(),tomorrow=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1);
+    if(tomorrow.getMonth()===d.getMonth())return;
+    const ym=d.getFullYear()+'-'+pad(d.getMonth()+1),flag='TT_CC_AUTO_BACKUP_'+ym;
+    if(localStorage.getItem(flag))return;
+    const payload={app:'TT-BANG-CHAM-CONG',version:1,autoBackup:true,month:ym,exportedAt:d.toISOString(),data:data};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});
+    const name='TT_Cham_Cong_Tu_Dong_'+ym+'.json';
+    downloadBackupBlob(blob,name);
+    localStorage.setItem(flag,new Date().toISOString());
+    localStorage.setItem('TT_CC_LAST_AUTO_BACKUP',JSON.stringify(payload));
+    toast('Đã tự động sao lưu dữ liệu cuối tháng '+pad(d.getMonth()+1)+'/'+d.getFullYear());
+  }catch(e){}
+}
 function downloadBackupBlob(blob,name){
   try{
     const url=URL.createObjectURL(blob),a=document.createElement('a');
@@ -388,7 +403,7 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
     advances.push({id:'a'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),workshopId:wid,employee:name,date,amount,note});
     saveAdv(); month=monthOf(date); active=Math.max(0,data.workshops.findIndex(x=>x.id===wid)); render(); toast('Đã lưu tạm ứng');
   };
-  window.TT_delAdvance=function(id){if(!confirm('Xóa khoản tạm ứng này?'))return;advances=advances.filter(a=>a.id!==id);saveAdv();render();toast('Đã xóa tạm ứng');};
+  window.TT_delAdvance=function(id){if(!confirm('Xóa khoản tạm ứng này?'))return;advances=advances.filter(a=>a.id!==id);saveAdv();render();setTimeout(autoMonthEndBackup,1200);toast('Đã xóa tạm ứng');};
   window.TT_clearAdvanceForm=function(){['advName','advAmount','advNote'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''})};
 
   function renderSummaryV12(){
@@ -435,7 +450,5 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
   setTimeout(function(){addTab();if(view==='summary')renderSummaryV12();},0);
 })();
 </script>
-
-<script src="v22.js?v=a49afb44-single-final"></script>
 </body>
 </html>
