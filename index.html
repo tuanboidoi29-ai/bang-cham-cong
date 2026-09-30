@@ -60,7 +60,8 @@ th{background:#f1f5f9}th,td{border-color:#e2e8f0}
 
 <script>
 const KEY='TT_CC_V11';
-let data=load(),active=0,month=new Date().toISOString().slice(0,7),view='workshop',pType='xuong',editKey='',editType='xuong',editOriginalKey='';
+let data={workshops:[],records:{}},active=0,month=new Date().toISOString().slice(0,7),view='workshop',pType='xuong',editKey='',editType='xuong',editOriginalKey='';
+try{data=load()}catch(e){console.error('TT load error',e);data={workshops:[{id:'w_recovery',name:'Xưởng 1',owner:'',phone:'',lx:0,ct:0,ot:0,notes:[]}],records:{}}}
 function uid(){return'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function exportBackup(){
   try{
@@ -301,7 +302,7 @@ function lunarDate(y,m,d){
 }
 function dateKey(y,m,d){return y+'-'+pad(m)+'-'+pad(d)}
 setInterval(()=>{let e=document.getElementById('clock');if(e)e.textContent=new Date().toLocaleString('vi-VN',{hour12:false})},1000);
-render();
+try{render()}catch(e){console.error('TT render error',e);const t=document.getElementById('tabs'),cc=document.getElementById('content');if(t)t.innerHTML='<button class="tab active">🏭 Xưởng 1</button><button class="tab summary">💰 TỔNG LƯƠNG</button><button class="tab add" onclick="newWorkshop()">＋ Thêm xưởng</button>';if(cc)cc.innerHTML='<div class="card"><div class="title">⚠️ Đang khôi phục giao diện</div><div class="hint">Dữ liệu vẫn được giữ. Hãy tải lại trang một lần.</div><button class="green" style="margin-top:12px" onclick="location.reload()">TẢI LẠI</button></div>'}
 function zaloExportWorkshop(){
   let w=data.workshops[active];
   if(!w)return toast('Chưa chọn xưởng');
@@ -502,9 +503,8 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
   setTimeout(function(){addTab();if(view==='summary')renderSummaryV12();},0);
 })();
 
-startAutoBackupScheduler();
-setTimeout(function(){syncCloudBackup(false)},2000);
+setTimeout(function(){try{startAutoBackupScheduler()}catch(e){console.error('backup scheduler',e)}},500);
+setTimeout(function(){try{syncCloudBackup(false)}catch(e){console.error('cloud sync',e)}},2500);
 </script>
-<script src="backup.js?v=1"></script>
 </body>
 </html>
