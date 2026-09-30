@@ -45,7 +45,7 @@ th{background:#f1f5f9}th,td{border-color:#e2e8f0}
 </head>
 <body>
 <div class="app">
-<div class="top noPrint"><h2>🕘 TT - BẢNG CHẤM CÔNG</h2><div class="controls"><button class="green" onclick="jpgExportWorkshop()">📸 Xuất JPG & Gửi Zalo</button><b id="clock"></b></div></div>
+<div class="top noPrint"><h2>🕘 TT - BẢNG CHẤM CÔNG</h2><div class="controls"><button class="green" onclick="jpgExportWorkshop()">📸 Xuất JPG & Gửi Zalo</button><button class="purple" onclick="exportBackup()">💾 Xuất dữ liệu</button><button class="gray" onclick="document.getElementById('backupImport').click()">📥 Nhập dữ liệu</button><input id="backupImport" type="file" accept=".json,application/json" style="display:none" onchange="importBackup(this)"><b id="clock"></b></div></div>
 <div id="tabs" class="tabs noPrint"></div>
 <div id="content"></div>
 </div>
@@ -62,6 +62,31 @@ th{background:#f1f5f9}th,td{border-color:#e2e8f0}
 const KEY='TT_CC_V11';
 let data=load(),active=0,month=new Date().toISOString().slice(0,7),view='workshop',pType='xuong',editKey='',editType='xuong',editOriginalKey='';
 function uid(){return'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function exportBackup(){
+  try{
+    const payload={app:'TT-BANG-CHAM-CONG',version:1,exportedAt:new Date().toISOString(),data:data};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download='TT_Cham_Cong_Sao_Luu_'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},1000);
+    toast('Đã xuất file sao lưu');
+  }catch(e){toast('Không thể xuất dữ liệu')}
+}
+function importBackup(input){
+  const file=input&&input.files&&input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(){
+    try{
+      const raw=JSON.parse(String(reader.result||'{}')),d=raw&&raw.data?raw.data:raw;
+      if(!d||!Array.isArray(d.workshops)||typeof d.records!=='object'||d.records===null)throw new Error('invalid');
+      if(!confirm('Nhập dữ liệu sẽ thay thế dữ liệu hiện tại. Tiếp tục?')){input.value='';return}
+      localStorage.setItem(KEY,JSON.stringify(d));
+      data=load();active=0;view='workshop';input.value='';render();toast('Đã nhập dữ liệu sao lưu');
+    }catch(e){input.value='';toast('File sao lưu không hợp lệ')}
+  };
+  reader.onerror=function(){input.value='';toast('Không đọc được file')};
+  reader.readAsText(file);
+}
 function load(){let d=null;for(let k of [KEY,'TT_CC_V10','TT_CC_V9','TT_CC_V8','TT_CC_V7','TT_CC_V6']){try{d=JSON.parse(localStorage.getItem(k)||'null');if(d)break}catch(e){}}let x={workshops:[],records:{}};if(d&&Array.isArray(d.workshops)){x.workshops=d.workshops.map(w=>({...w,id:w.id||uid(),name:w.name||'Xưởng',lx:Number(w.lx??w.pay)||0,ct:Number(w.ct??0)||0,ot:Number(w.ot??0)||0,notes:Array.isArray(w.notes)?w.notes:(w.note?[{id:'n_old',text:String(w.note),createdAt:''}]:[])}));Object.keys(d.records||{}).forEach(k=>{let r=d.records[k]||{};x.records[k]={...r,otMorning:Number(r.otMorning||0),otEvening:Number(r.otEvening||0),otRate:Number(r.otRate||0)}})}else{x.workshops=[{id:uid(),name:'Xưởng 1',lx:0,ct:0,ot:0}]};return normalize(x)}
 function normalize(d){d.records=d.records||{};d.workshops=(d.workshops||[]).map(w=>({...w,id:w.id||uid(),name:w.name||'Xưởng',lx:Number(w.lx??w.pay)||0,ct:Number(w.ct??0)||0,ot:Number(w.ot??0)||0,notes:Array.isArray(w.notes)?w.notes:(w.note?[{id:'n_old',text:String(w.note),createdAt:''}]:[])}));Object.keys(d.records).forEach(k=>{let r=d.records[k]||{};r.otMorning=Number(r.otMorning||0);r.otEvening=Number(r.otEvening||0);r.otRate=Number(r.otRate||0);d.records[k]=r});if(!d.workshops.length)d.workshops=[{id:uid(),name:'Xưởng 1',lx:0,ct:0,ot:0}];localStorage.setItem(KEY,JSON.stringify(d));return d}
 function save(){localStorage.setItem(KEY,JSON.stringify(data));render()}
