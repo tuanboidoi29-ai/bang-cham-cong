@@ -345,14 +345,24 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
 
   function renderSummaryV12(){
     const c=document.getElementById('content'); if(!c)return;
-    const rows=data.workshops.map(w=>{const salary=totalSalary(w,month), adv=advTotal(w.id,month), people=salaryData(w,month).length, days=salaryData(w,month).reduce((s,x)=>s+x.days,0);return {w,salary,adv,net:salary-adv,people,days}});
+    const saved=JSON.parse(localStorage.getItem('TT_CC_SUMMARY_SELECTED')||'[]');
+    const selectedIds=Array.isArray(saved)?saved:[];
+    const useAll=selectedIds.length===0;
+    const picked=data.workshops.filter(w=>useAll||selectedIds.includes(w.id));
+    const rows=picked.map(w=>{const salary=totalSalary(w,month), adv=advTotal(w.id,month), people=salaryData(w,month).length, days=salaryData(w,month).reduce((s,x)=>s+x.days,0);return {w,salary,adv,net:salary-adv,people,days}});
     const grand=rows.reduce((s,x)=>s+x.salary,0), ga=rows.reduce((s,x)=>s+x.adv,0), gn=rows.reduce((s,x)=>s+x.net,0);
-    c.innerHTML=`<div class="card summaryBox"><div class="bar"><div><div class="title">💰 TỔNG LƯƠNG</div><div class="hint">Tổng lương theo xưởng, sau khi trừ toàn bộ tạm ứng trong tháng.</div></div><div class="controls"><label>Tháng</label><input id="sumM" type="month" value="${month}"></div></div>
+    const choices=data.workshops.map(w=>`<label style="display:flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #d7dee8;border-radius:10px;background:#fff"><input class="sumWorkshopPick" type="checkbox" value="${esc2(w.id)}" ${selectedIds.includes(w.id)?'checked':''}> <b>${esc2(w.name)}</b></label>`).join('');
+    c.innerHTML=`<div class="card summaryBox"><div class="bar"><div><div class="title">💰 TỔNG LƯƠNG</div><div class="hint">Chọn một hoặc nhiều xưởng để tính. Nếu không chọn xưởng nào, hệ thống tự tính tất cả các xưởng.</div></div><div class="controls"><label>Tháng</label><input id="sumM" type="month" value="${month}"></div></div>
+      <div style="margin:10px 0"><div style="font-weight:800;margin-bottom:7px">🏭 Xưởng cần tính</div><div style="display:flex;gap:7px;flex-wrap:wrap">${choices}</div><div class="hint" style="margin-top:6px">${useAll?'Đang tính: TẤT CẢ XƯỞNG':'Đang tính: '+picked.map(w=>esc2(w.name)).join(', ')}</div></div>
       <div class="stats"><div class="stat">Tổng lương: <b>${fmt(grand)}</b></div><div class="stat">Tạm ứng: <b class="dangerText">${fmt(ga)}</b></div><div class="stat summaryTotal">CÒN PHẢI TRẢ: ${fmt(gn)}</div></div>
       <div class="tableWrap"><table><thead><tr><th>Xưởng</th><th>Số người</th><th>Ngày công</th><th>Tiền công + tăng ca</th><th>Tạm ứng</th><th>Còn phải trả</th></tr></thead><tbody>${rows.map(x=>`<tr><td class="left"><b>${esc2(x.w.name)}</b></td><td>${x.people}</td><td>${x.days}</td><td class="money">${fmt(x.salary)}</td><td>${fmt(x.adv)}</td><td class="summaryTotal">${fmt(x.net)}</td></tr>`).join('')}<tr><th>TỔNG</th><th>${rows.reduce((s,x)=>s+x.people,0)}</th><th>${rows.reduce((s,x)=>s+x.days,0)}</th><th>${fmt(grand)}</th><th>${fmt(ga)}</th><th>${fmt(gn)}</th></tr></tbody></table></div>
     </div>
     <div class="card"><div class="title">👤 Chi tiết theo người</div><div class="tableWrap"><table><thead><tr><th>Xưởng</th><th>Người</th><th>Ngày công</th><th>Lương</th><th>Tạm ứng</th><th>Còn nhận</th></tr></thead><tbody>${rows.flatMap(x=>salaryData(x.w,month).map(p=>{const a=allAdvForPerson(x.w.id,p.name,month);return `<tr><td>${esc2(x.w.name)}</td><td class="left">${esc2(p.name)}</td><td>${p.days}</td><td>${fmt(p.total)}</td><td>${fmt(a)}</td><td class="summaryTotal">${fmt(p.total-a)}</td></tr>`})).join('')||'<tr><td colspan="6" class="empty">Chưa có dữ liệu chấm công.</td></tr>'}</tbody></table></div></div>`;
     document.getElementById('sumM').onchange=function(){month=this.value;render();};
+    document.querySelectorAll('.sumWorkshopPick').forEach(el=>el.onchange=function(){
+      const ids=[...document.querySelectorAll('.sumWorkshopPick:checked')].map(x=>x.value);
+      localStorage.setItem('TT_CC_SUMMARY_SELECTED',JSON.stringify(ids));render();
+    });
   }
 
   const originalRender=window.render;
@@ -365,9 +375,9 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
   setTimeout(function(){addTab();if(view==='summary')renderSummaryV12();},0);
 })();
 </script>
-<script src="v12.js?v=20260930-parser-fix8"></script>
-<script src="backup.js?v=20260930-parser-fix8"></script>
-<script src="fix-two-buttons.js?v=20260930-parser-fix8"></script>
-<script src="fix_controls.js?v=20260930-parser-fix8"></script>
+<script src="v12.js?v=20260930-summary-pick9"></script>
+<script src="backup.js?v=20260930-summary-pick9"></script>
+<script src="fix-two-buttons.js?v=20260930-summary-pick9"></script>
+<script src="fix_controls.js?v=20260930-summary-pick9"></script>
 </body>
 </html>
