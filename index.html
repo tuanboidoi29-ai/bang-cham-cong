@@ -78,7 +78,7 @@ function exportBackup(){
 }
 const AUTO_BACKUP_SETTINGS_KEY='TT_CC_AUTO_BACKUP_SETTINGS';
 function getAutoBackupSettings(){try{const x=JSON.parse(localStorage.getItem(AUTO_BACKUP_SETTINGS_KEY)||'null');if(x&&typeof x==='object')return {enabled:x.enabled!==false,time:/^\d{2}:\d{2}$/.test(x.time||'')?x.time:'23:55'}}catch(e){}return {enabled:true,time:'23:55'}}
-function saveAutoBackupSettings(){const enabled=!!document.getElementById('autoBackupEnabled')?.checked,time=document.getElementById('autoBackupTime')?.value||'23:55';localStorage.setItem(AUTO_BACKUP_SETTINGS_KEY,JSON.stringify({enabled,time}));toast(enabled?'Đã bật sao lưu tự động lúc '+time:'Đã tắt sao lưu tự động');openAutoBackups();autoMonthEndBackup()}
+function saveAutoBackupSettings(){const enabled=!!document.getElementById('autoBackupEnabled')?.checked,time=document.getElementById('autoBackupTime')?.value||'23:55';localStorage.setItem(AUTO_BACKUP_SETTINGS_KEY,JSON.stringify({enabled,time}));queueCloudBackup();toast(enabled?'Đã bật sao lưu tự động lúc '+time:'Đã tắt sao lưu tự động');openAutoBackups();autoMonthEndBackup()}
 function addBackupToHistory(payload){let list=[];try{list=JSON.parse(localStorage.getItem('TT_CC_AUTO_BACKUPS')||'[]')}catch(e){}if(!Array.isArray(list))list=[];if(payload.autoBackup)list=list.filter(x=>!(x&&x.autoBackup&&x.month===payload.month));list.unshift(payload);localStorage.setItem('TT_CC_AUTO_BACKUPS',JSON.stringify(list.slice(0,24)))}
 function makeBackupPayload(kind){const d=new Date(),ym=d.getFullYear()+'-'+pad(d.getMonth()+1);return {app:'TT-BANG-CHAM-CONG',version:2,autoBackup:kind==='auto',manualBackup:kind==='manual',month:ym,scheduledTime:getAutoBackupSettings().time,exportedAt:d.toISOString(),data:JSON.parse(JSON.stringify(data))}}
 function runBackup(kind,download){try{const p=makeBackupPayload(kind);addBackupToHistory(p);localStorage.setItem('TT_CC_LAST_AUTO_BACKUP',JSON.stringify(p));if(kind==='auto')localStorage.setItem('TT_CC_AUTO_BACKUP_'+p.month,p.exportedAt);if(download!==false)downloadBackupBlob(new Blob([JSON.stringify(p,null,2)],{type:'application/json;charset=utf-8'}),(kind==='auto'?'TT_Cham_Cong_Tu_Dong_':'TT_Cham_Cong_Thu_Cong_')+p.month+'_'+pad(new Date().getDate())+'.json');return p}catch(e){toast('Không thể sao lưu dữ liệu');return null}}
@@ -92,7 +92,7 @@ function openAutoBackups(){
   let list=getAutoBackups(),m=document.getElementById('autoBackupModal'),cfg=getAutoBackupSettings();
   if(!m){m=document.createElement('div');m.id='autoBackupModal';m.className='modal';m.innerHTML='<div class="box" style="width:min(760px,98%)"><div id="autoBackupContent"></div></div>';document.body.appendChild(m)}
   let rows=list.map((x,i)=>'<div class="card"><div class="bar"><div><b>💾 '+esc(x.month||'Bản sao lưu')+(x.autoBackup?' · TỰ ĐỘNG':' · THỦ CÔNG')+'</b><div class="hint">'+esc(x.exportedAt?new Date(x.exportedAt).toLocaleString('vi-VN'):'')+'</div></div><div class="controls"><button class="green" onclick="restoreAutoBackup('+i+')">🔄 KHÔI PHỤC</button><button class="purple" onclick="downloadAutoBackup('+i+')">⬇️ Tải bản sao</button></div></div></div>').join('');
-  document.getElementById('autoBackupContent').innerHTML='<div class="bar"><div><h3 style="margin:0">🗂️ SAO LƯU DỮ LIỆU</h3><div class="hint">Lần gần nhất: '+esc(lastBackupText())+'<br>Lần tự động dự kiến: '+esc(nextAutoBackupText())+'</div></div><button class="gray" onclick="closeM(\\'autoBackupModal\\')">Đóng</button></div><div class="card" style="margin:12px 0"><b>⚙️ CÀI ĐẶT TỰ ĐỘNG</b><div class="row" style="margin-top:10px;align-items:center"><label style="display:flex;gap:8px;align-items:center"><input id="autoBackupEnabled" type="checkbox" '+(cfg.enabled?'checked':'')+'> Bật tự động cuối tháng</label><label>Giờ <input id="autoBackupTime" type="time" value="'+esc(cfg.time)+'" style="width:auto"></label><button class="orange" onclick="saveAutoBackupSettings()">💾 LƯU CÀI ĐẶT</button><button class="green" onclick="backupNow()">💾 SAO LƯU NGAY</button></div><div class="hint">Mỗi tháng chỉ tạo 1 bản tự động. Nếu trang mở sau giờ đã đặt trong ngày cuối tháng, hệ thống sẽ sao lưu ngay khi phát hiện.</div></div>'+(rows||'<div class="empty">Chưa có bản sao lưu.</div>');
+  document.getElementById('autoBackupContent').innerHTML='<div class="bar"><div><h3 style="margin:0">🗂️ SAO LƯU DỮ LIỆU</h3><div class="hint">Lần gần nhất: '+esc(lastBackupText())+'<br>Lần tự động dự kiến: '+esc(nextAutoBackupText())+'</div></div><button class="gray" onclick="closeM(\\'autoBackupModal\\')">Đóng</button></div><div class="card" style="margin:12px 0"><b>⚙️ CÀI ĐẶT TỰ ĐỘNG</b><div class="hint" style="margin-top:6px">☁️ Cloud: <span id="cloudBackupStatus">'+esc(ttCloudStatus)+'</span> · <button class="purple" onclick="syncCloudBackup(true)">ĐỒNG BỘ CLOUD NGAY</button></div><div class="row" style="margin-top:10px;align-items:center"><label style="display:flex;gap:8px;align-items:center"><input id="autoBackupEnabled" type="checkbox" '+(cfg.enabled?'checked':'')+'> Bật tự động cuối tháng</label><label>Giờ <input id="autoBackupTime" type="time" value="'+esc(cfg.time)+'" style="width:auto"></label><button class="orange" onclick="saveAutoBackupSettings()">💾 LƯU CÀI ĐẶT</button><button class="green" onclick="backupNow()">💾 SAO LƯU NGAY</button></div><div class="hint">Mỗi tháng chỉ tạo 1 bản tự động. Nếu trang mở sau giờ đã đặt trong ngày cuối tháng, hệ thống sẽ sao lưu ngay khi phát hiện.</div></div>'+(rows||'<div class="empty">Chưa có bản sao lưu.</div>');
   m.classList.add('show');
 }
 function startAutoBackupScheduler(){autoMonthEndBackup();if(window.__ttAutoBackupTimer)clearInterval(window.__ttAutoBackupTimer);window.__ttAutoBackupTimer=setInterval(autoMonthEndBackup,30000);document.addEventListener('visibilitychange',function(){if(!document.hidden)autoMonthEndBackup()});window.addEventListener('focus',autoMonthEndBackup)}
@@ -127,7 +127,34 @@ function importBackup(input){
 }
 function load(){let d=null;for(let k of [KEY,'TT_CC_V10','TT_CC_V9','TT_CC_V8','TT_CC_V7','TT_CC_V6']){try{d=JSON.parse(localStorage.getItem(k)||'null');if(d)break}catch(e){}}let x={workshops:[],records:{}};if(d&&Array.isArray(d.workshops)){x.workshops=d.workshops.map(w=>({...w,id:w.id||uid(),name:w.name||'Xưởng',lx:Number(w.lx??w.pay)||0,ct:Number(w.ct??0)||0,ot:Number(w.ot??0)||0,notes:Array.isArray(w.notes)?w.notes:(w.note?[{id:'n_old',text:String(w.note),createdAt:''}]:[])}));Object.keys(d.records||{}).forEach(k=>{let r=d.records[k]||{};x.records[k]={...r,otMorning:Number(r.otMorning||0),otEvening:Number(r.otEvening||0),otRate:Number(r.otRate||0)}})}else{x.workshops=[{id:uid(),name:'Xưởng 1',lx:0,ct:0,ot:0}]};return normalize(x)}
 function normalize(d){d.records=d.records||{};d.workshops=(d.workshops||[]).map(w=>({...w,id:w.id||uid(),name:w.name||'Xưởng',lx:Number(w.lx??w.pay)||0,ct:Number(w.ct??0)||0,ot:Number(w.ot??0)||0,notes:Array.isArray(w.notes)?w.notes:(w.note?[{id:'n_old',text:String(w.note),createdAt:''}]:[])}));Object.keys(d.records).forEach(k=>{let r=d.records[k]||{};r.otMorning=Number(r.otMorning||0);r.otEvening=Number(r.otEvening||0);r.otRate=Number(r.otRate||0);d.records[k]=r});if(!d.workshops.length)d.workshops=[{id:uid(),name:'Xưởng 1',lx:0,ct:0,ot:0}];localStorage.setItem(KEY,JSON.stringify(d));return d}
-function save(){localStorage.setItem(KEY,JSON.stringify(data));render()}
+const TT_CLOUD_URL='https://vnvkmxqgbnmirsgdgfzm.supabase.co';
+const TT_CLOUD_KEY='sb_publishable_3_eNGIeI94r21u1JYuqE1Q_JXeLrCxr';
+const TT_CLOUD_SESSION='TT_CC_CLOUD_SESSION';
+let ttCloudTimer=null,ttCloudBusy=false,ttCloudStatus='Chưa kết nối';
+function setCloudStatus(s){ttCloudStatus=s;const el=document.getElementById('cloudBackupStatus');if(el)el.textContent=s}
+async function ttCloudSession(){
+  try{
+    let s=JSON.parse(localStorage.getItem(TT_CLOUD_SESSION)||'null');
+    if(s&&s.access_token&&(!s.expires_at||s.expires_at*1000>Date.now()+60000))return s;
+    const r=await fetch(TT_CLOUD_URL+'/auth/v1/signup',{method:'POST',headers:{'apikey':TT_CLOUD_KEY,'Content-Type':'application/json'},body:'{}'});
+    if(!r.ok)throw new Error('AUTH_'+r.status);
+    const j=await r.json(),session=j.session||j;if(!session.access_token)throw new Error('NO_SESSION');
+    localStorage.setItem(TT_CLOUD_SESSION,JSON.stringify(session));return session;
+  }catch(e){setCloudStatus('Cloud chưa sẵn sàng');throw e}
+}
+async function syncCloudBackup(showToast){
+  if(ttCloudBusy)return;ttCloudBusy=true;
+  try{
+    const s=await ttCloudSession(),d=new Date(),ym=d.getFullYear()+'-'+pad(d.getMonth()+1),cfg=getAutoBackupSettings();
+    const payload={app:'TT-BANG-CHAM-CONG',version:3,cloudLive:true,month:ym,scheduledTime:cfg.time,autoEnabled:cfg.enabled,syncedAt:d.toISOString(),data:JSON.parse(JSON.stringify(data))};
+    const r=await fetch(TT_CLOUD_URL+'/rest/v1/tt_attendance_cloud_backups?on_conflict=user_id,backup_month,backup_kind',{method:'POST',headers:{'apikey':TT_CLOUD_KEY,'Authorization':'Bearer '+s.access_token,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({backup_month:ym,backup_kind:'live',backup_data:payload})});
+    if(!r.ok)throw new Error('SYNC_'+r.status);
+    localStorage.setItem('TT_CC_LAST_CLOUD_SYNC',d.toISOString());setCloudStatus('Đã đồng bộ Cloud: '+d.toLocaleString('vi-VN'));if(showToast)toast('Đã sao lưu lên Cloud');
+  }catch(e){setCloudStatus('Cloud lỗi/chưa bật đăng nhập ẩn danh');if(showToast)toast('Chưa thể sao lưu Cloud')}
+  finally{ttCloudBusy=false}
+}
+function queueCloudBackup(){clearTimeout(ttCloudTimer);ttCloudTimer=setTimeout(function(){syncCloudBackup(false)},1500)}
+function save(){localStorage.setItem(KEY,JSON.stringify(data));queueCloudBackup();render()}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function money(n){return Number(n||0).toLocaleString('vi-VN')+' đ'}
 function pad(n){return String(n).padStart(2,'0')}
@@ -472,8 +499,7 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
 })();
 
 startAutoBackupScheduler();
+setTimeout(function(){syncCloudBackup(false)},2000);
 </script>
-
-<script src="v22.js?v=a49afb44-single-final"></script>
 </body>
 </html>
