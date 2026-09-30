@@ -491,19 +491,19 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
     document.querySelectorAll('.sumMonthPick').forEach(function(el){el.onclick=function(ev){ev.stopPropagation();const ms=Array.prototype.slice.call(document.querySelectorAll('.sumMonthPick')).filter(x=>x.checked).map(x=>x.value);if(!ms.length){el.checked=true;return}localStorage.setItem('TT_CC_SUMMARY_MONTHS',JSON.stringify(ms));setTimeout(renderSummaryV12,0)}});
   }
 
-  const originalRender=window.render;
-  window.render=function(){
+  const originalRender=render;
+  render=function(){
     originalRender();
     addTab();
     if(view==='advance')renderAdvance();
     if(view==='summary')renderSummaryV12();
   };
+  window.render=render;
   setTimeout(function(){addTab();if(view==='summary')renderSummaryV12();},0);
 })();
 
 startAutoBackupScheduler();
 setTimeout(function(){syncCloudBackup(false)},2000);
 </script>
-<script src="backup.js?v=1"></script>
 </body>
 </html>
