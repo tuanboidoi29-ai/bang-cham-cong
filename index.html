@@ -91,12 +91,23 @@ function autoMonthEndBackup(){
     toast('Đã tự động sao lưu dữ liệu cuối tháng '+pad(d.getMonth()+1)+'/'+d.getFullYear());
   }catch(e){}
 }
+function manualBackup(){
+  try{
+    const d=new Date(),ym=d.getFullYear()+'-'+pad(d.getMonth()+1);
+    const payload={app:'TT-BANG-CHAM-CONG',version:1,manualBackup:true,month:ym,exportedAt:d.toISOString(),data:JSON.parse(JSON.stringify(data))};
+    let list=[];try{list=JSON.parse(localStorage.getItem('TT_CC_AUTO_BACKUPS')||'[]')}catch(e){}
+    if(!Array.isArray(list))list=[];
+    list.unshift(payload);localStorage.setItem('TT_CC_AUTO_BACKUPS',JSON.stringify(list.slice(0,24)));
+    downloadBackupBlob(new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'}),'TT_Cham_Cong_Thu_Cong_'+ym+'_'+pad(d.getDate())+'.json');
+    openAutoBackups();toast('Đã sao lưu thủ công');
+  }catch(e){toast('Không thể sao lưu thủ công')}
+}
 function getAutoBackups(){try{let a=JSON.parse(localStorage.getItem('TT_CC_AUTO_BACKUPS')||'[]');if(Array.isArray(a)&&a.length)return a}catch(e){}try{let x=JSON.parse(localStorage.getItem('TT_CC_LAST_AUTO_BACKUP')||'null');return x?[x]:[]}catch(e){return[]}}
 function openAutoBackups(){
   let list=getAutoBackups(),m=document.getElementById('autoBackupModal');
   if(!m){m=document.createElement('div');m.id='autoBackupModal';m.className='modal';m.innerHTML='<div class="box" style="width:min(760px,98%)"><div id="autoBackupContent"></div></div>';document.body.appendChild(m)}
   let rows=list.map((x,i)=>'<div class="card"><div class="bar"><div><b>💾 '+esc(x.month||'Bản sao lưu')+'</b><div class="hint">'+esc(x.exportedAt?new Date(x.exportedAt).toLocaleString('vi-VN'):'')+'</div></div><div class="controls"><button class="green" onclick="restoreAutoBackup('+i+')">🔄 CẬP NHẬT / KHÔI PHỤC</button><button class="purple" onclick="downloadAutoBackup('+i+')">⬇️ Tải bản sao</button></div></div></div>').join('');
-  document.getElementById('autoBackupContent').innerHTML='<div class="bar"><div><h3 style="margin:0">🗂️ CÁC BẢN SAO LƯU TỰ ĐỘNG</h3><div class="hint">Dùng Cập nhật / Khôi phục khi dữ liệu hiện tại bị mất hoặc sai.</div></div><button class="gray" onclick="closeM(\'autoBackupModal\')">Đóng</button></div>'+(rows||'<div class="empty">Chưa có bản sao lưu tự động.</div>');
+  document.getElementById('autoBackupContent').innerHTML='<div class="bar"><div><h3 style="margin:0">🗂️ CÁC BẢN SAO LƯU</h3><div class="hint">Tự động sao lưu vào ngày cuối tháng. Có thể sao lưu thủ công bất kỳ lúc nào.</div></div><div class="controls"><button class="green" onclick="manualBackup()">💾 SAO LƯU THỦ CÔNG</button><button class="gray" onclick="closeM(\'autoBackupModal\')">Đóng</button></div></div>'+(rows||'<div class="empty">Chưa có bản sao lưu.</div>');
   m.classList.add('show');
 }
 function restoreAutoBackup(i){
@@ -464,6 +475,5 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
   setTimeout(function(){addTab();if(view==='summary')renderSummaryV12();},0);
 })();
 </script>
-<script src="fix_controls.js?v=fix2"></script>
 </body>
 </html>
