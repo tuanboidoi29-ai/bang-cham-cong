@@ -39,6 +39,44 @@ th{background:#f1f5f9}th,td{border-color:#e2e8f0}
 }
 .summaryPicker{margin:10px 0;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px}.summaryPickerGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:6px;max-height:230px;overflow:auto}.summaryPick{display:flex;align-items:center;gap:6px;padding:7px 8px;border:1px solid #dbe4ef;border-radius:11px;background:#fff;font-weight:800;cursor:pointer;min-height:38px}.summaryPick:has(input:checked){border-color:#7c3aed;background:#f5f0ff;box-shadow:0 0 0 2px #7c3aed20}.summaryPick input{width:17px;height:17px;accent-color:#7c3aed;flex:0 0 auto}.summaryHero{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:12px 0}.summaryHero .stat{min-height:72px;display:flex;flex-direction:column;justify-content:center}.summaryHero .big{font-size:20px;font-weight:900;margin-top:4px}@media(max-width:600px){.summaryPickerGrid{grid-template-columns:repeat(3,1fr);gap:5px;max-height:190px}.summaryHero{grid-template-columns:1fr}.summaryHero .stat{min-height:58px}.summaryPick{padding:6px 5px;font-size:11px;min-height:34px;gap:4px}.summaryPick input{width:16px;height:16px}}
 @media print{body{background:#fff}.noPrint{display:none!important}.app{max-width:none;padding:0}.card{box-shadow:none;padding:4px;margin:0 0 6px}.tableWrap{overflow:visible}.grid{min-width:0;width:100%}.grid th,.grid td{font-size:7px;padding:2px;min-width:0}.grid th:first-child,.grid td:first-child{position:static;min-width:55px}.sign{display:flex;justify-content:space-around;text-align:center;margin-top:22px}.sign div{width:220px}}
+
+/* ===== TT LIGHT UI 3.0 · 2026-09-30 ===== */
+:root{--ui-blue:#1677ff;--ui-blue2:#0b63e6;--ui-green:#08a66c;--ui-orange:#ff8a00;--ui-purple:#7c3aed;--ui-red:#ef4444;--ui-bg:#f4f8fd;--ui-card:#fff;--ui-line:#e6edf6;--ui-text:#142033;--ui-muted:#718096}
+html{background:var(--ui-bg)}body{background:linear-gradient(180deg,#eef6ff 0,#f8fbff 260px,#f4f7fb 100%);color:var(--ui-text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif;min-height:100vh}
+.app{max-width:1720px;padding:16px 18px 34px}
+.top{min-height:82px;background:rgba(255,255,255,.96);border:1px solid rgba(219,230,244,.9);border-radius:24px;padding:16px 18px;box-shadow:0 12px 36px rgba(42,72,120,.10);backdrop-filter:blur(18px)}
+.top h2{font-size:24px;line-height:1.05;font-weight:900;letter-spacing:-.7px;color:#142033}
+.top .controls{gap:9px}.top .controls button{min-height:44px;padding:10px 15px}
+.tabs{top:0;margin:8px 0 4px;padding:9px 2px 11px;background:rgba(244,248,253,.88);backdrop-filter:blur(16px);scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tab{background:#fff;border:1px solid #e0e9f4;color:#526176;border-radius:16px;padding:11px 17px;box-shadow:0 4px 12px rgba(36,62,99,.06);transition:.18s ease}
+.tab.active{background:linear-gradient(135deg,#2386ff,#0b63e6);border-color:transparent;color:#fff;box-shadow:0 8px 20px rgba(22,119,255,.28)}
+.tab.summary{background:linear-gradient(135deg,#8b5cf6,#6d28d9);border-color:transparent;color:#fff}.tab.add{background:linear-gradient(135deg,#10b981,#07865b);border-color:transparent;color:#fff}
+.card{background:rgba(255,255,255,.97);border:1px solid var(--ui-line);border-radius:22px;padding:17px;margin:11px 0;box-shadow:0 10px 30px rgba(40,66,103,.075)}
+.card .card{box-shadow:none;background:#f8fbff}
+.title{font-size:20px;font-weight:900;letter-spacing:-.35px}.hint,.mini{color:var(--ui-muted)}
+button{min-height:42px;border-radius:13px;padding:10px 14px;font-weight:800;letter-spacing:-.1px;background:linear-gradient(135deg,#2386ff,#0b63e6);box-shadow:0 5px 13px rgba(22,119,255,.18);transition:transform .12s ease,filter .12s ease}
+button:active{transform:scale(.97);filter:brightness(.96)}button.green,.green{background:linear-gradient(135deg,#12b981,#07865b)}button.orange,.orange{background:linear-gradient(135deg,#ff9b1a,#e97800)}button.purple,.purple{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}button.gray,.gray{background:#718096}button.danger,.danger{background:linear-gradient(135deg,#f05252,#c92a2a)}
+input,select,textarea{min-height:42px;background:#f9fbfe;border:1px solid #dbe5f1;border-radius:13px;color:#1d2939;box-shadow:inset 0 1px 2px rgba(15,23,42,.025)}
+input:focus,select:focus,textarea:focus{background:#fff;border-color:#60a5fa;box-shadow:0 0 0 4px rgba(96,165,250,.14)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.stat{background:linear-gradient(145deg,#f9fbff,#f1f6fc);border:1px solid #e4ecf6;border-radius:16px;padding:12px}
+.wages{gap:10px}.wage{background:#f8fbff;border:1px solid #e5edf7;border-radius:15px;padding:10px}.wage label,.field label{color:#526176}
+.tableWrap{background:#fff;border:1px solid #e2eaf4;border-radius:17px;box-shadow:0 4px 14px rgba(40,66,103,.035)}
+table{background:#fff}th{background:#f3f7fc;color:#475569;border-color:#e4ebf4}td{border-color:#edf1f6}.grid th:first-child{background:#f3f7fc}.grid td:first-child{background:#fff}
+.daycell{transition:.15s}.daycell:hover{background:#f1f7ff}.worked{background:#eafaf2}.construction{background:#fff5e8}.today{outline:2px solid #2583ff}
+.modal{background:rgba(17,28,45,.46);backdrop-filter:blur(8px)}.box{background:#fff;border:1px solid #e6edf6;border-radius:26px;padding:20px;box-shadow:0 28px 80px rgba(15,23,42,.30)}.box h3{font-size:22px;letter-spacing:-.4px}
+.choice{gap:11px}.choice button{border-radius:17px;box-shadow:0 8px 18px rgba(15,23,42,.10)}.choice .selected{outline:3px solid #4da0ff;outline-offset:2px}
+.summaryBox{border:1px solid #e8ddff;background:linear-gradient(145deg,#fff,#faf7ff)}.summaryTotal{color:#6d28d9}.summaryPicker{background:#f8fbff;border-color:#e3ebf5}.summaryPick{border-radius:13px;border-color:#e1e9f3}
+.toast{bottom:26px;background:#172334;border:1px solid #334155;border-radius:15px;padding:12px 17px;box-shadow:0 12px 35px #0003}
+@media(max-width:600px){
+ body{background:linear-gradient(180deg,#eef6ff 0,#f8fbff 210px,#f4f7fb 100%)}
+ .app{padding:10px 10px 26px}.top{min-height:94px;padding:14px;border-radius:22px;align-items:flex-start}.top h2{font-size:20px;max-width:190px}
+ .top .controls{max-width:58%;gap:7px}.top .controls button{font-size:12px;min-height:40px;padding:9px 10px;border-radius:12px}
+ .tabs{margin:6px -10px 2px;padding:8px 10px 11px}.tab{padding:10px 14px;border-radius:14px}
+ .card{padding:13px;border-radius:19px;margin:9px 0}.title{font-size:18px}.stats{grid-template-columns:1fr 1fr;gap:8px}.stat{border-radius:14px;padding:10px}
+ .wages{grid-template-columns:1fr 1fr}.wage{padding:8px}.box{width:calc(100% - 10px);max-height:92vh;padding:16px;border-radius:24px}.box h3{font-size:20px}
+ .row{gap:7px}.row button{min-height:44px}.choice button{min-height:74px}.tableWrap{border-radius:14px}
+}
+
 </style>
 <!-- TT stable standalone 21 -->
 <!-- TT UI stable: no external scripts / PDF isolated -->
@@ -506,6 +544,5 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
 setTimeout(function(){try{startAutoBackupScheduler()}catch(e){console.error('backup scheduler',e)}},500);
 setTimeout(function(){try{syncCloudBackup(false)}catch(e){console.error('cloud sync',e)}},2500);
 </script>
-<script src="backup.js?v=backup2"></script>
 </body>
 </html>
