@@ -45,7 +45,7 @@ th{background:#f1f5f9}th,td{border-color:#e2e8f0}
 </head>
 <body>
 <div class="app">
-<div class="top noPrint"><h2>🕘 TT - BẢNG CHẤM CÔNG</h2><div class="controls"><button class="green" onclick="jpgExportWorkshop()">📸 Xuất JPG & Gửi Zalo</button><button class="purple" onclick="exportBackup()">💾 Xuất dữ liệu</button><button class="gray" onclick="document.getElementById('backupImport').click()">📥 Nhập dữ liệu</button><button class="orange" onclick="openAutoBackups()">🗂️ Bản sao lưu</button><input id="backupImport" type="file" accept=".json,application/json" style="display:none" onchange="importBackup(this)"><b id="clock"></b></div></div>
+<div class="top noPrint"><h2>🕘 TT - BẢNG CHẤM CÔNG</h2><div class="controls"><button class="green" onclick="jpgExportWorkshop()">📸 Xuất JPG & Gửi Zalo</button><button class="orange" onclick="openAutoBackups()">🗂️ Bản sao lưu</button><b id="clock"></b></div></div>
 <div id="tabs" class="tabs noPrint"></div>
 <div id="content"></div>
 </div>
@@ -475,7 +475,5 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
   setTimeout(function(){addTab();if(view==='summary')renderSummaryV12();},0);
 })();
 </script>
-
-<script src="v22.js?v=a49afb44-single-final"></script>
 </body>
 </html>
