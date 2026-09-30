@@ -92,7 +92,7 @@ function openAutoBackups(){
   let list=getAutoBackups(),m=document.getElementById('autoBackupModal'),cfg=getAutoBackupSettings();
   if(!m){m=document.createElement('div');m.id='autoBackupModal';m.className='modal';m.innerHTML='<div class="box" style="width:min(680px,96%)"><div id="autoBackupContent"></div></div>';document.body.appendChild(m)}
   let rows=list.map((x,i)=>'<div class="card" style="margin-top:10px"><div><b>💾 '+esc(x.month||'Bản sao lưu')+(x.autoBackup?' · TỰ ĐỘNG':' · THỦ CÔNG')+'</b><div class="hint">'+esc(x.exportedAt?new Date(x.exportedAt).toLocaleString('vi-VN'):'')+'</div></div><div class="controls" style="margin-top:8px"><button class="green" onclick="restoreAutoBackup('+i+')">🔄 KHÔI PHỤC</button><button class="purple" onclick="downloadAutoBackup('+i+')">⬇️ TẢI</button></div></div>').join('');
-  let html='<div class="bar"><div><h3 style="margin:0">🗂️ SAO LƯU DỮ LIỆU</h3><div class="hint">Lần gần nhất: '+esc(lastBackupText())+'</div></div><button class="gray" onclick="closeM(\\'autoBackupModal\\')">Đóng</button></div>';
+  let html='<div class="bar"><div><h3 style="margin:0">🗂️ SAO LƯU DỮ LIỆU</h3><div class="hint">Lần gần nhất: '+esc(lastBackupText())+'</div></div><button class="gray" onclick="closeM(\'autoBackupModal\')">Đóng</button></div>';
   html+='<div class="card" style="margin-top:12px"><b>⚙️ TỰ ĐỘNG SAO LƯU</b><div style="margin-top:10px"><label style="display:flex;gap:8px;align-items:center"><input id="autoBackupEnabled" type="checkbox" '+(cfg.enabled?'checked':'')+'> Bật tự động cuối tháng</label></div><div class="row" style="margin-top:10px"><label style="flex:1">Giờ sao lưu<input id="autoBackupTime" type="time" value="'+esc(cfg.time)+'"></label></div><div class="controls"><button class="orange" onclick="saveAutoBackupSettings()">💾 LƯU CÀI ĐẶT</button><button class="green" onclick="backupNow()">💾 SAO LƯU NGAY</button></div><div class="hint" style="margin-top:8px">Dự kiến: '+esc(nextAutoBackupText())+'</div></div>';
   html+='<div class="card" style="margin-top:10px"><b>☁️ SAO LƯU CLOUD</b><div class="hint" id="cloudBackupStatus" style="margin:6px 0">'+esc(ttCloudStatus)+'</div><button class="purple" onclick="syncCloudBackup(true)">☁️ ĐỒNG BỘ CLOUD NGAY</button></div>';
   html+=rows||'<div class="empty">Chưa có bản sao lưu.</div>';
@@ -505,7 +505,5 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
 startAutoBackupScheduler();
 setTimeout(function(){syncCloudBackup(false)},2000);
 </script>
-<script src="backup.js?v=backup2"></script>
-<script src="backup.js?v=1"></script>
 </body>
 </html>
