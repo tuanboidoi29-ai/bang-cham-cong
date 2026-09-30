@@ -76,21 +76,11 @@ function exportBackup(){
     downloadBackupBlob(blob,name);
   }catch(e){toast('Không thể xuất dữ liệu')}
 }
-function autoMonthEndBackup(){
-  try{
-    const d=new Date(),tomorrow=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1);
-    if(tomorrow.getMonth()===d.getMonth())return;
-    const ym=d.getFullYear()+'-'+pad(d.getMonth()+1),flag='TT_CC_AUTO_BACKUP_'+ym;
-    if(localStorage.getItem(flag))return;
-    const payload={app:'TT-BANG-CHAM-CONG',version:1,autoBackup:true,month:ym,exportedAt:d.toISOString(),data:data};
-    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});
-    const name='TT_Cham_Cong_Tu_Dong_'+ym+'.json';
-    downloadBackupBlob(blob,name);
-    localStorage.setItem(flag,new Date().toISOString());
-    localStorage.setItem('TT_CC_LAST_AUTO_BACKUP',JSON.stringify(payload));let list=[];try{list=JSON.parse(localStorage.getItem('TT_CC_AUTO_BACKUPS')||'[]')}catch(e){};list=list.filter(x=>x&&x.month!==ym);list.unshift(payload);localStorage.setItem('TT_CC_AUTO_BACKUPS',JSON.stringify(list.slice(0,24)));
-    toast('Đã tự động sao lưu dữ liệu cuối tháng '+pad(d.getMonth()+1)+'/'+d.getFullYear());
-  }catch(e){}
-}
+const AUTO_BACKUP_SETTINGS_KEY='TT_CC_AUTO_BACKUP_SETTINGS';
+function getAutoBackupSettings(){try{const x=JSON.parse(localStorage.getItem(AUTO_BACKUP_SETTINGS_KEY)||'null');if(x&&typeof x==='object')return {enabled:x.enabled!==false,time:/^\\d{2}:\\d{2}$/.test(x.time||'')?x.time:'23:55'}}catch(e){}return {enabled:true,time:'23:55'}}
+function saveAutoBackupSettings(){const enabled=!!document.getElementById('autoBackupEnabled')?.checked,time=document.getElementById('autoBackupTime')?.value||'23:55';localStorage.setItem(AUTO_BACKUP_SETTINGS_KEY,JSON.stringify({enabled,time}));toast('Đã lưu giờ sao lưu tự động: '+time);openAutoBackups();autoMonthEndBackup()}
+function autoMonthEndBackup(){try{const cfg=getAutoBackupSettings();if(!cfg.enabled)return;const d=new Date(),tomorrow=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1);if(tomorrow.getMonth()===d.getMonth())return;const now=pad(d.getHours())+':'+pad(d.getMinutes());if(now<cfg.time)return;const ym=d.getFullYear()+'-'+pad(d.getMonth()+1),flag='TT_CC_AUTO_BACKUP_'+ym;if(localStorage.getItem(flag))return;const payload={app:'TT-BANG-CHAM-CONG',version:1,autoBackup:true,month:ym,scheduledTime:cfg.time,exportedAt:d.toISOString(),data:JSON.parse(JSON.stringify(data))};let list=[];try{list=JSON.parse(localStorage.getItem('TT_CC_AUTO_BACKUPS')||'[]')}catch(e){}if(!Array.isArray(list))list=[];list=list.filter(x=>!(x&&x.autoBackup&&x.month===ym));list.unshift(payload);localStorage.setItem('TT_CC_AUTO_BACKUPS',JSON.stringify(list.slice(0,24)));localStorage.setItem('TT_CC_LAST_AUTO_BACKUP',JSON.stringify(payload));localStorage.setItem(flag,d.toISOString());downloadBackupBlob(new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'}),'TT_Cham_Cong_Tu_Dong_'+ym+'.json');toast('Đã tự động sao lưu cuối tháng lúc '+cfg.time)}catch(e){}}
+function startAutoBackupScheduler(){autoMonthEndBackup();if(window.__ttAutoBackupTimer)clearInterval(window.__ttAutoBackupTimer);window.__ttAutoBackupTimer=setInterval(autoMonthEndBackup,30000)}
 function manualBackup(){
   try{
     const d=new Date(),ym=d.getFullYear()+'-'+pad(d.getMonth()+1);
@@ -104,10 +94,10 @@ function manualBackup(){
 }
 function getAutoBackups(){try{let a=JSON.parse(localStorage.getItem('TT_CC_AUTO_BACKUPS')||'[]');if(Array.isArray(a)&&a.length)return a}catch(e){}try{let x=JSON.parse(localStorage.getItem('TT_CC_LAST_AUTO_BACKUP')||'null');return x?[x]:[]}catch(e){return[]}}
 function openAutoBackups(){
-  let list=getAutoBackups(),m=document.getElementById('autoBackupModal');
+  let list=getAutoBackups(),m=document.getElementById('autoBackupModal'),cfg=getAutoBackupSettings();
   if(!m){m=document.createElement('div');m.id='autoBackupModal';m.className='modal';m.innerHTML='<div class="box" style="width:min(760px,98%)"><div id="autoBackupContent"></div></div>';document.body.appendChild(m)}
   let rows=list.map((x,i)=>'<div class="card"><div class="bar"><div><b>💾 '+esc(x.month||'Bản sao lưu')+'</b><div class="hint">'+esc(x.exportedAt?new Date(x.exportedAt).toLocaleString('vi-VN'):'')+'</div></div><div class="controls"><button class="green" onclick="restoreAutoBackup('+i+')">🔄 CẬP NHẬT / KHÔI PHỤC</button><button class="purple" onclick="downloadAutoBackup('+i+')">⬇️ Tải bản sao</button></div></div></div>').join('');
-  document.getElementById('autoBackupContent').innerHTML='<div class="bar"><div><h3 style="margin:0">🗂️ CÁC BẢN SAO LƯU</h3><div class="hint">Tự động sao lưu vào ngày cuối tháng. Có thể sao lưu thủ công bất kỳ lúc nào.</div></div><div class="controls"><button class="green" onclick="manualBackup()">💾 SAO LƯU THỦ CÔNG</button><button class="gray" onclick="closeM(\'autoBackupModal\')">Đóng</button></div></div>'+(rows||'<div class="empty">Chưa có bản sao lưu.</div>');
+  document.getElementById('autoBackupContent').innerHTML='<div class="bar"><div><h3 style="margin:0">🗂️ CÁC BẢN SAO LƯU</h3><div class="hint">Tự động sao lưu vào ngày cuối tháng theo giờ đã cài.</div></div><div class="controls"><button class="green" onclick="manualBackup()">💾 SAO LƯU THỦ CÔNG</button><button class="gray" onclick="closeM(\\'autoBackupModal\\')">Đóng</button></div></div><div class="card" style="margin:12px 0"><b>⚙️ CÀI ĐẶT SAO LƯU TỰ ĐỘNG</b><div class="row" style="margin-top:10px;align-items:center"><label style="display:flex;gap:8px;align-items:center"><input id="autoBackupEnabled" type="checkbox" '+(cfg.enabled?'checked':'')+'> Bật sao lưu tự động cuối tháng</label><label>Giờ sao lưu <input id="autoBackupTime" type="time" value="'+esc(cfg.time)+'" style="width:auto"></label><button class="orange" onclick="saveAutoBackupSettings()">💾 LƯU CÀI ĐẶT</button></div><div class="hint">Mặc định 23:55. Mỗi tháng chỉ tạo 1 bản tự động. Trang cần đang mở tại hoặc sau giờ đã cài trong ngày cuối tháng.</div></div>'+(rows||'<div class="empty">Chưa có bản sao lưu.</div>');
   m.classList.add('show');
 }
 function restoreAutoBackup(i){
@@ -484,7 +474,8 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
   };
   setTimeout(function(){addTab();if(view==='summary')renderSummaryV12();},0);
 })();
+
+startAutoBackupScheduler();
 </script>
-<script src="backup.js?v=backup2"></script>
 </body>
 </html>
