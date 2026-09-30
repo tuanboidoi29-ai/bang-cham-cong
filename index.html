@@ -40,6 +40,7 @@ th{background:#f1f5f9}th,td{border-color:#e2e8f0}
 .summaryPicker{margin:14px 0;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px}.summaryPickerGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.summaryPick{display:flex;align-items:center;gap:9px;padding:11px;border:1px solid #dbe4ef;border-radius:13px;background:#fff;font-weight:800;cursor:pointer}.summaryPick:has(input:checked){border-color:#7c3aed;background:#f5f0ff;box-shadow:0 0 0 2px #7c3aed20}.summaryPick input{width:20px;height:20px;accent-color:#7c3aed}.summaryHero{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:12px 0}.summaryHero .stat{min-height:72px;display:flex;flex-direction:column;justify-content:center}.summaryHero .big{font-size:20px;font-weight:900;margin-top:4px}@media(max-width:600px){.summaryPickerGrid{grid-template-columns:1fr 1fr}.summaryHero{grid-template-columns:1fr}.summaryHero .stat{min-height:58px}.summaryPick{padding:10px 8px;font-size:13px}}
 @media print{body{background:#fff}.noPrint{display:none!important}.app{max-width:none;padding:0}.card{box-shadow:none;padding:4px;margin:0 0 6px}.tableWrap{overflow:visible}.grid{min-width:0;width:100%}.grid th,.grid td{font-size:7px;padding:2px;min-width:0}.grid th:first-child,.grid td:first-child{position:static;min-width:55px}.sign{display:flex;justify-content:space-around;text-align:center;margin-top:22px}.sign div{width:220px}}
 </style>
+<!-- TT stable standalone 21 -->
 </head>
 <body>
 <div class="app">
@@ -172,8 +173,6 @@ function printWorkshopStats(){
     return '<tr><td>'+esc(x.date)+'</td><td>'+esc(ld||'—')+'</td><td>'+esc(x.name)+'</td><td>'+(x.r.type==='congtrinh'?'CT':'LX')+'</td><td>'+wc+'</td><td>'+esc(x.r.in||'—')+'</td><td>'+esc(x.r.out||'—')+'</td><td>'+oh.toFixed(2)+'</td><td>'+money(wp)+'</td><td>'+money(op)+'</td><td><b>'+money(wp+op)+'</b></td></tr>';
   }).join('');
   const html='<!doctype html><html><head><meta charset="utf-8"><title>Thống kê</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Arial;font-size:11px}h1{text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #777;padding:5px;text-align:center}th{background:#eee}</style></head><body><h1>BẢNG THỐNG KÊ CHẤM CÔNG</h1><h3>'+esc(w.name)+'</h3><p>Tổng công: '+workCount+' · Tăng ca: '+otHoursTotal.toFixed(2)+' giờ · Tổng tiền: '+money(work+ot)+'</p><table><thead><tr><th>Ngày</th><th>Âm lịch</th><th>Người</th><th>LX/CT</th><th>Số công</th><th>Vào</th><th>Ra</th><th>TC giờ</th><th>Tiền công</th><th>Tiền TC</th><th>Tổng</th></tr></thead><tbody>'+(body||'<tr><td colspan="11">Chưa có dữ liệu</td></tr>')+'</tbody></table>
-
-<script src="backup.js?v=1"></script>
 </body></html>';
   const win=window.open('','_blank');
   if(!win){toast('Trình duyệt đang chặn cửa sổ xuất PDF');return}
@@ -413,12 +412,5 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
   setTimeout(function(){addTab();if(view==='summary')renderSummaryV12();},0);
 })();
 </script>
-<script src="v12.js?v=20260930-ui20-stable"></script>
-<script src="backup.js?v=20260930-ui20-stable"></script>
-<script src="fix-two-buttons.js?v=20260930-ui20-stable"></script>
-<script src="fix_controls.js?v=20260930-ui20-stable"></script>
-
-<script src="v22.js?v=20260930-ui20-stable"></script>
-<script src="backup.js?v=1"></script>
 </body>
 </html>
