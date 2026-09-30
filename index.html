@@ -156,7 +156,29 @@ function deleteWorkshopNote(id){
   if(!confirm('Xóa ghi chú này?'))return;
   list.splice(idx,1);localStorage.setItem(KEY,JSON.stringify(data));clearWorkshopNoteForm();renderWorkshopNoteList();toast('Đã xóa ghi chú');
 }
-function printWorkshopStats(){toast('Xuất PDF đang tạm khóa để giữ giao diện ổn định');}
+function printWorkshopStats(){
+  const w=data.workshops[active];if(!w)return toast('Chưa chọn xưởng');
+  const rows=[];
+  Object.keys(data.records||{}).forEach(function(k){
+    if(!k.startsWith(w.id+'|'))return;
+    const a=k.split('|'),r=data.records[k]||{};
+    rows.push({name:a[1]||'',date:a[2]||'',r:r});
+  });
+  rows.sort(function(a,b){return a.date.localeCompare(b.date)||a.name.localeCompare(b.name,'vi')});
+  let work=0,ot=0,workCount=0,otHoursTotal=0;
+  const body=rows.map(function(x){
+    const p=x.date.split('-').map(Number),ld=p.length===3?lunarDate(p[0],p[1],p[2]):'';
+    const wc=Number(x.r.workFraction==null?1:x.r.workFraction)||0;
+    const wp=Number(x.r.wage||0),oh=otHours(x.r),op=otMoney(x.r);
+    workCount+=wc;work+=wp;ot+=op;otHoursTotal+=oh;
+    return '<tr><td>'+esc(x.date)+'</td><td>'+esc(ld||'—')+'</td><td>'+esc(x.name)+'</td><td>'+(x.r.type==='congtrinh'?'CT':'LX')+'</td><td>'+wc+'</td><td>'+esc(x.r.in||'—')+'</td><td>'+esc(x.r.out||'—')+'</td><td>'+oh.toFixed(2)+'</td><td>'+money(wp)+'</td><td>'+money(op)+'</td><td><b>'+money(wp+op)+'</b></td></tr>';
+  }).join('');
+  const html='<!doctype html><html><head><meta charset="utf-8"><title>Thống kê '+esc(w.name)+'</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Arial,sans-serif;font-size:11px;color:#111}h1{text-align:center;font-size:20px;margin:0 0 5px}h3{text-align:center;margin:0 0 10px}.sum{margin:8px 0;font-weight:bold}table{width:100%;border-collapse:collapse}th,td{border:1px solid #777;padding:5px;text-align:center}th{background:#eee}</style></head><body><h1>BẢNG THỐNG KÊ CHẤM CÔNG</h1><h3>'+esc(w.name)+'</h3><div class="sum">Tổng công: '+workCount+' &nbsp; | &nbsp; Tăng ca: '+otHoursTotal.toFixed(2)+' giờ &nbsp; | &nbsp; Tiền công: '+money(work)+' &nbsp; | &nbsp; Tiền TC: '+money(ot)+' &nbsp; | &nbsp; Tổng: '+money(work+ot)+'</div><table><thead><tr><th>Ngày</th><th>Âm lịch</th><th>Người</th><th>LX/CT</th><th>Số công</th><th>Vào</th><th>Ra</th><th>TC giờ</th><th>Tiền công</th><th>Tiền TC</th><th>Tổng</th></tr></thead><tbody>'+(body||'<tr><td colspan="11">Chưa có dữ liệu</td></tr>')+'</tbody></table></body></html>';
+  const win=window.open('','_blank');
+  if(!win)return toast('Safari đang chặn cửa sổ PDF. Hãy cho phép cửa sổ bật lên.');
+  win.document.open();win.document.write(html);win.document.close();
+  setTimeout(function(){try{win.focus();win.print()}catch(e){toast('Không mở được hộp thoại PDF')}},450);
+}
 function openWorkshopStats(){
   const w=data.workshops[active]; if(!w)return;
   const rows=[];
