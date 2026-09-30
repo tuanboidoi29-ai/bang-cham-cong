@@ -65,12 +65,24 @@ function uid(){return'w'+Date.now().toString(36)+Math.random().toString(36).slic
 function exportBackup(){
   try{
     const payload={app:'TT-BANG-CHAM-CONG',version:1,exportedAt:new Date().toISOString(),data:data};
-    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-    const url=URL.createObjectURL(blob),a=document.createElement('a');
-    a.href=url;a.download='TT_Cham_Cong_Sao_Luu_'+new Date().toISOString().slice(0,10)+'.json';
-    document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},1000);
-    toast('Đã xuất file sao lưu');
+    const text=JSON.stringify(payload,null,2);
+    const name='TT_Cham_Cong_Sao_Luu_'+new Date().toISOString().slice(0,10)+'.json';
+    const blob=new Blob([text],{type:'application/json;charset=utf-8'});
+    const file=(typeof File!=='undefined')?new File([blob],name,{type:'application/json'}):null;
+    if(file&&navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:'Sao lưu bảng chấm công'}).then(function(){toast('Đã mở bảng lưu/chia sẻ dữ liệu')}).catch(function(err){if(err&&err.name!=='AbortError')downloadBackupBlob(blob,name)});
+      return;
+    }
+    downloadBackupBlob(blob,name);
   }catch(e){toast('Không thể xuất dữ liệu')}
+}
+function downloadBackupBlob(blob,name){
+  try{
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=name;a.style.display='none';document.body.appendChild(a);a.click();
+    setTimeout(function(){a.remove();URL.revokeObjectURL(url)},3000);
+    toast('Đã tạo file sao lưu');
+  }catch(e){toast('Không thể tải file sao lưu')}
 }
 function importBackup(input){
   const file=input&&input.files&&input.files[0];if(!file)return;
