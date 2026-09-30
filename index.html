@@ -162,8 +162,7 @@ function printWorkshopStats(){
   rows.sort(function(a,b){return a.date.localeCompare(b.date)||a.name.localeCompare(b.name,'vi')});
   let work=0,ot=0,workCount=0,otHoursTotal=0;
   const body=rows.map(function(x){const p=x.date.split('-').map(Number),ld=p.length===3?lunarDate(p[0],p[1],p[2]):'';const wc=Number(x.r.workFraction==null?1:x.r.workFraction)||0;const wp=Number(x.r.wage||0),oh=otHours(x.r),op=otMoney(x.r);workCount+=wc;work+=wp;ot+=op;otHoursTotal+=oh;return '<tr><td>'+esc(x.date)+'</td><td>'+esc(ld||'—')+'</td><td>'+esc(x.name)+'</td><td>'+(x.r.type==='congtrinh'?'CT':'LX')+'</td><td>'+wc+'</td><td>'+esc(x.r.in||'—')+'</td><td>'+esc(x.r.out||'—')+'</td><td>'+oh.toFixed(2)+'</td><td>'+money(wp)+'</td><td>'+money(op)+'</td><td><b>'+money(wp+op)+'</b></td></tr>'}).join('');
-  const html='<!doctype html><html><head><meta charset="utf-8"><title>Thống kê</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Arial;font-size:11px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #777;padding:5px;text-align:center}</style></head><body><h1>BẢNG THỐNG KÊ CHẤM CÔNG</h1><h3>'+esc(w.name)+'</h3><p>Tổng công: '+workCount+' · Tăng ca: '+otHoursTotal.toFixed(2)+' giờ · Tổng tiền: '+money(work+ot)+'</p><table><tbody>'+body+'</tbody></table><script src="v22.js"></script>
-<script src="backup.js?v=1"></script>
+  const html='<!doctype html><html><head><meta charset="utf-8"><title>Thống kê</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Arial;font-size:11px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #777;padding:5px;text-align:center}</style></head><body><h1>BẢNG THỐNG KÊ CHẤM CÔNG</h1><h3>'+esc(w.name)+'</h3><p>Tổng công: '+workCount+' · Tăng ca: '+otHoursTotal.toFixed(2)+' giờ · Tổng tiền: '+money(work+ot)+'</p><table><tbody>'+body+'</tbody></table>
 </body></html>';
   const win=window.open('','_blank');if(!win){toast('Trình duyệt đang chặn cửa sổ xuất PDF');return}win.document.open();win.document.write(html);win.document.close();setTimeout(function(){try{win.focus();win.print()}catch(e){}},300);
 }
@@ -408,7 +407,5 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
   setTimeout(function(){addTab();if(view==='summary')renderSummaryV12();},0);
 })();
 </script>
-<script src="v22.js"></script>
-<script src="backup.js?v=1"></script>
 </body>
 </html>
