@@ -392,9 +392,13 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
     </div>
     <div class="card"><div class="title">👤 Chi tiết theo người</div><div class="tableWrap"><table><thead><tr><th>Xưởng</th><th>Người</th><th>Ngày công</th><th>Lương</th><th>Tạm ứng</th><th>Còn nhận</th></tr></thead><tbody>${rows.flatMap(x=>salaryData(x.w,month).map(p=>{const a=allAdvForPerson(x.w.id,p.name,month);return `<tr><td>${esc2(x.w.name)}</td><td class="left">${esc2(p.name)}</td><td>${p.days}</td><td>${fmt(p.total)}</td><td>${fmt(a)}</td><td class="summaryTotal">${fmt(p.total-a)}</td></tr>`})).join('')||'<tr><td colspan="6" class="empty">Chưa có dữ liệu chấm công.</td></tr>'}</tbody></table></div></div>`;
     document.getElementById('sumM').onchange=function(){month=this.value;render();};
-    document.querySelectorAll('.sumWorkshopPick').forEach(el=>el.onchange=function(){
-      const ids=[...document.querySelectorAll('.sumWorkshopPick:checked')].map(x=>x.value);
-      localStorage.setItem('TT_CC_SUMMARY_SELECTED',JSON.stringify(ids));render();
+    document.querySelectorAll('.sumWorkshopPick').forEach(function(el){
+      el.onclick=function(ev){
+        ev.stopPropagation();
+        const ids=Array.prototype.slice.call(document.querySelectorAll('.sumWorkshopPick')).filter(function(x){return x.checked}).map(function(x){return x.value});
+        localStorage.setItem('TT_CC_SUMMARY_SELECTED',JSON.stringify(ids));
+        setTimeout(function(){renderSummaryV12()},0);
+      };
     });
   }
 
@@ -408,12 +412,12 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
   setTimeout(function(){addTab();if(view==='summary')renderSummaryV12();},0);
 })();
 </script>
-<script src="v12.js?v=20260930-parser-repair16-final"></script>
-<script src="backup.js?v=20260930-parser-repair16-final"></script>
-<script src="fix-two-buttons.js?v=20260930-parser-repair16-final"></script>
-<script src="fix_controls.js?v=20260930-parser-repair16-final"></script>
+<script src="v12.js?v=20260930-summary-select17"></script>
+<script src="backup.js?v=20260930-summary-select17"></script>
+<script src="fix-two-buttons.js?v=20260930-summary-select17"></script>
+<script src="fix_controls.js?v=20260930-summary-select17"></script>
 
-<script src="v22.js?v=parser-repair16-final"></script>
+<script src="v22.js?v=summary-select17"></script>
 <script src="backup.js?v=1"></script>
 </body>
 </html>
