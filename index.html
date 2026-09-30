@@ -116,7 +116,8 @@ function otMoney(r){return otHours(r)*Number(r?.otRate||0)}
 function closeM(id){document.getElementById(id).classList.remove('show')}
 function openM(id){document.getElementById(id).classList.add('show')}
 function toast(t){let e=document.getElementById('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1800)}
-function tabs(){let h=data.workshops.map((w,i)=>'<button class="tab '+(view==='workshop'&&i===active?'active':'')+'" onclick="view=\'workshop\';active='+i+';render()">🏭 '+esc(w.name)+'</button>').join('');h+='<button class="tab summary '+(view==='summary'?'active':'')+'" onclick="view=\'summary\';render()">💰 TỔNG LƯƠNG</button>';h+='<button class="tab add" onclick="newWorkshop()">＋ Thêm xưởng</button>';document.getElementById('tabs').innerHTML=h}
+function selectWorkshop(i){i=Number(i);if(!Number.isInteger(i)||i<0||i>=data.workshops.length)return;active=i;view='workshop';render()}
+function tabs(){let h=data.workshops.map((w,i)=>'<button type="button" class="tab '+(view==='workshop'&&i===active?'active':'')+'" data-workshop-index="'+i+'">🏭 '+esc(w.name)+'</button>').join('');h+='<button type="button" class="tab summary '+(view==='summary'?'active':'')+'" data-summary-tab="1">💰 TỔNG LƯƠNG</button>';h+='<button type="button" class="tab add" data-add-workshop="1">＋ Thêm xưởng</button>';let box=document.getElementById('tabs');box.innerHTML=h;box.querySelectorAll('[data-workshop-index]').forEach(function(b){b.onclick=function(){selectWorkshop(b.dataset.workshopIndex)}});let s=box.querySelector('[data-summary-tab]');if(s)s.onclick=function(){view='summary';render()};let a=box.querySelector('[data-add-workshop]');if(a)a.onclick=newWorkshop}
 function newWorkshop(){document.getElementById('wName').value='';document.getElementById('wLX').value='';document.getElementById('wCT').value='';document.getElementById('wOT').value='';openM('workshopModal')}
 function saveWorkshop(){let n=document.getElementById('wName').value.trim(),lx=Number(document.getElementById('wLX').value||0),ct=Number(document.getElementById('wCT').value||0),ot=Number(document.getElementById('wOT').value||0);if(!n)return toast('Nhập tên xưởng');data.workshops.push({id:uid(),name:n,lx,ct,ot});active=data.workshops.length-1;view='workshop';save();closeM('workshopModal');toast('Đã tạo xưởng')}
 function editWorkshop(){let w=data.workshops[active],n=prompt('Tên xưởng:',w.name);if(n===null)return;let lx=prompt('Lương làm xưởng / ngày:',w.lx),ct=prompt('Lương đi công trình / ngày:',w.ct),ot=prompt('Tiền tăng ca / giờ:',w.ot);if(lx===null||ct===null||ot===null)return;w.name=n.trim()||w.name;w.lx=Number(lx)||0;w.ct=Number(ct)||0;w.ot=Number(ot)||0;save();toast('Đã cập nhật lương')}
@@ -435,9 +436,5 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
   setTimeout(function(){addTab();if(view==='summary')renderSummaryV12();},0);
 })();
 </script>
-<script src="backup.js?v=backup2"></script>
-<script src="fix_controls.js?v=fix2"></script>
-
-<script src="v22.js?v=a49afb44-single-final"></script>
 </body>
 </html>
