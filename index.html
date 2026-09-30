@@ -142,6 +142,7 @@ function printWorkshopStats(){
   }).join('');
   const nowText=new Date().toLocaleString('vi-VN',{hour12:false});
   const html='<!doctype html><html><head><meta charset="utf-8"><title>Thống kê '+esc(w.name)+'</title><style>@page{size:A4 landscape;margin:10mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;font-size:11px}h1{text-align:center;font-size:20px;margin:0 0 4px}.sub{text-align:center;color:#555;margin-bottom:12px}.summary{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.s{border:1px solid #bbb;padding:7px 10px;border-radius:6px;font-weight:700}table{width:100%;border-collapse:collapse}th,td{border:1px solid #777;padding:5px;text-align:center}th{background:#eee}.left{text-align:left}tfoot td{font-weight:700;background:#f5f5f5}.sign{display:flex;justify-content:space-between;text-align:center;margin-top:28px;padding:0 60px}.sign div{width:220px}.note{margin-top:8px;font-size:10px;color:#555}</style></head><body><h1>BẢNG THỐNG KÊ CHẤM CÔNG</h1><div class="sub"><b>'+esc(w.name)+'</b> · Lập lúc '+esc(nowText)+'</div><div class="summary"><div class="s">Lượt chấm: '+rows.length+'</div><div class="s">Tổng số công: '+workCount+'</div><div class="s">Tăng ca: '+otHoursTotal.toFixed(2)+' giờ</div><div class="s">Tiền công: '+money(work)+'</div><div class="s">Tiền tăng ca: '+money(ot)+'</div><div class="s">TỔNG: '+money(work+ot)+'</div></div><table><thead><tr><th>Ngày</th><th>Âm lịch</th><th>Người</th><th>LX/CT</th><th>Số công</th><th>Giờ vào</th><th>Giờ ra</th><th>TC giờ</th><th>Tiền công</th><th>Tiền TC</th><th>Tổng</th></tr></thead><tbody>'+(body||'<tr><td colspan="11">Chưa có dữ liệu chấm công.</td></tr>')+'</tbody><tfoot><tr><td colspan="4">TỔNG CỘNG</td><td>'+workCount+'</td><td colspan="2"></td><td>'+otHoursTotal.toFixed(2)+'</td><td>'+money(work)+'</td><td>'+money(ot)+'</td><td>'+money(work+ot)+'</td></tr></tfoot></table><div class="note">LX = Làm xưởng · CT = Công trình</div><div class="sign"><div><b>Người lập bảng</b><br><br><br><br>________________</div><div><b>Người duyệt</b><br><br><br><br>________________</div></div><script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script><script src="backup.js?v=1"></script>
+<script src="v22.js"></script>
 </body></html>';
   const win=window.open('','_blank');
   if(!win){toast('Trình duyệt đang chặn cửa sổ xuất PDF');return}
@@ -372,5 +373,6 @@ function downloadJpg(blob,name){let a=document.createElement('a');a.href=URL.cre
 <script src="fix_controls.js?v=20260930-note-fix3"></script>
 <script src="v22.js?v=20260930-note-fix3"></script>
 <script src="backup.js?v=1"></script>
+<script src="v22.js"></script>
 </body>
 </html>
