@@ -5,22 +5,7 @@
   function byId(id){return document.getElementById(id)}
   function notify(t){try{if(typeof toast==='function')toast(t);else alert(t)}catch(e){alert(t)}}
 
-  window.openPunch=function(){
-    try{
-      const w=(window.data&&data.workshops)?data.workshops[active]:null;
-      if(!w)return notify('Chưa chọn xưởng');
-      window.pType='xuong';
-      if(byId('pName'))byId('pName').value='';
-      if(byId('pDate'))byId('pDate').value=(typeof today==='function'?today():new Date().toISOString().slice(0,10));
-      if(byId('punchWorkshop'))byId('punchWorkshop').textContent=w.name+' · chọn LX hoặc CT';
-      if(byId('pWage'))byId('pWage').value=Number(w.lx||0);
-      if(byId('pOTMorning'))byId('pOTMorning').value=0;
-      if(byId('pOTEve'))byId('pOTEve').value=0;
-      if(byId('pOTRate'))byId('pOTRate').value=Number(w.ot||0);
-      if(typeof markType==='function')markType();
-      const m=byId('punchModal'); if(m)m.classList.add('show');
-    }catch(e){console.error(e);notify('Lỗi mở chấm công')}
-  };
+  // Giữ nguyên openPunch(button) của ứng dụng chính để truyền đúng ID xưởng.
 
   window.TT_exportPDF=function(){
     try{window.print()}catch(e){console.error(e);notify('Không mở được chức năng in PDF')}
@@ -128,7 +113,7 @@
       openEditFromButton(b);
       return;
     }
-    if(txt==='🟢 CHẤM CÔNG' || (txt==='CHẤM CÔNG' && !b.closest('#punchModal'))){e.preventDefault();e.stopImmediatePropagation();window.openPunch();return}
+    if(txt==='🟢 CHẤM CÔNG' || (txt==='CHẤM CÔNG' && !b.closest('#punchModal'))){e.preventDefault();e.stopImmediatePropagation();if(typeof window.openPunch==='function')window.openPunch(b);return}
     if(txt.indexOf('XUẤT PDF')>=0){e.preventDefault();e.stopImmediatePropagation();window.TT_exportPDF();return}
   },true);
 
