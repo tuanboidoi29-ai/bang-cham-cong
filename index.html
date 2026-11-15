@@ -149,6 +149,7 @@ function openAutoBackups(){
   let rows=list.map((x,i)=>'<div class="card" style="margin-top:10px"><div><b>💾 '+esc(x.month||'Bản sao lưu')+(x.autoBackup?' · TỰ ĐỘNG':' · THỦ CÔNG')+'</b><div class="hint">'+esc(x.exportedAt?new Date(x.exportedAt).toLocaleString('vi-VN'):'')+'</div></div><div class="controls" style="margin-top:8px"><button class="green" onclick="restoreAutoBackup('+i+')">🔄 KHÔI PHỤC</button><button class="purple" onclick="downloadAutoBackup('+i+')">⬇️ TẢI</button></div></div>').join('');
   let html='<div class="bar"><div><h3 style="margin:0">🗂️ SAO LƯU DỮ LIỆU</h3><div class="hint">Lần gần nhất: '+esc(lastBackupText())+'</div></div><button class="gray" onclick="closeM(\'autoBackupModal\')">Đóng</button></div>';
   html+='<div class="card" style="margin-top:12px"><b>⚙️ TỰ ĐỘNG SAO LƯU</b><div style="margin-top:10px"><label style="display:flex;gap:8px;align-items:center"><input id="autoBackupEnabled" type="checkbox" '+(cfg.enabled?'checked':'')+'> Bật tự động cuối tháng</label></div><div class="row" style="margin-top:10px"><label style="flex:1">Giờ sao lưu<input id="autoBackupTime" type="time" value="'+esc(cfg.time)+'"></label></div><div class="controls"><button class="orange" onclick="saveAutoBackupSettings()">💾 LƯU CÀI ĐẶT</button><button class="green" onclick="backupNow()">💾 SAO LƯU NGAY</button></div><div class="hint" style="margin-top:8px">Dự kiến: '+esc(nextAutoBackupText())+'</div></div>';
+  html+='<div class="card" style="margin-top:10px;border:1px solid #bfdbfe;background:#f8fbff"><b>📥 TẢI BẢN SAO LƯU TỪ THIẾT BỊ</b><div class="hint" style="margin:6px 0 10px">Chọn file .json đã xuất từ TT Bảng chấm công hoặc bản sao lưu tương thích. Sau khi xác nhận, dữ liệu sẽ được nhập và đồng bộ lên Cloud.</div><input id="ttBackupUpload" type="file" accept=".json,application/json" style="display:none" onchange="importBackup(this)"><button class="green" type="button" onclick="document.getElementById(\'ttBackupUpload\').click()">📂 CHỌN FILE SAO LƯU</button><div class="hint" style="margin-top:8px">Hỗ trợ file sao lưu TT định dạng JSON. Dữ liệu hiện tại sẽ được lưu dự phòng trước khi thay thế.</div></div>';
   html+='<div class="card" style="margin-top:10px"><b>☁️ SAO LƯU CLOUD</b><div class="hint" id="cloudBackupStatus" style="margin:6px 0">'+esc(ttCloudStatus)+'</div><button class="purple" onclick="syncCloudBackup(true)">☁️ ĐỒNG BỘ CLOUD NGAY</button></div>';
   html+=rows||'<div class="empty">Chưa có bản sao lưu.</div>';
   document.getElementById('autoBackupContent').innerHTML=html;m.classList.add('show');
@@ -170,17 +171,39 @@ function downloadBackupBlob(blob,name){
 }
 function importBackup(input){
   const file=input&&input.files&&input.files[0];if(!file)return;
+  const reset=function(){if(input)input.value=''};
+  if(file.size>25*1024*1024){reset();return toast('File quá lớn (tối đa 25 MB)')}
+  if(!/\\.json$/i.test(file.name)&&file.type!=='application/json'){reset();return toast('Vui lòng chọn file sao lưu .json')}
   const reader=new FileReader();
-  reader.onload=function(){
+  reader.onload=async function(){
     try{
-      const raw=JSON.parse(String(reader.result||'{}')),d=raw&&raw.data?raw.data:raw;
-      if(!d||!Array.isArray(d.workshops)||typeof d.records!=='object'||d.records===null)throw new Error('invalid');
-      if(!confirm('Nhập dữ liệu sẽ thay thế dữ liệu hiện tại. Tiếp tục?')){input.value='';return}
-      localStorage.setItem(KEY,JSON.stringify(d));
-      data=load();active=0;view='workshop';input.value='';render();toast('Đã nhập dữ liệu sao lưu');
-    }catch(e){input.value='';toast('File sao lưu không hợp lệ')}
+      const raw=JSON.parse(String(reader.result||'{}'));
+      if(raw&&raw.app&&raw.app!=='TT-BANG-CHAM-CONG')throw new Error('wrong_app');
+      const d=raw&&raw.data?raw.data:raw;
+      if(!d||!Array.isArray(d.workshops)||!d.workshops.length||typeof d.records!=='object'||d.records===null||Array.isArray(d.records))throw new Error('invalid');
+      if(!confirm('Đã đọc được '+d.workshops.length+' xưởng và '+Object.keys(d.records).length+' bản ghi chấm công.\\n\\nHệ thống sẽ lưu dự phòng dữ liệu hiện tại, sau đó thay dữ liệu bằng file này và đồng bộ lên Cloud. Tiếp tục?')){reset();return}
+      const currentBackup=runBackup('manual',false);
+      if(!currentBackup)throw new Error('backup_current_failed');
+      data=normalize(JSON.parse(JSON.stringify(d)));
+      active=0;view='workshop';month=new Date().toISOString().slice(0,7);
+      reset();render();
+      setCloudStatus('Đang đồng bộ dữ liệu vừa nhập lên Cloud…');
+      toast('Đã nhập file. Đang đồng bộ Cloud…');
+      await syncCloudBackup(false);
+      if(String(ttCloudStatus).indexOf('Đã đồng bộ Cloud:')===0){
+        toast('Đã nhập và đồng bộ bản sao lưu lên Cloud');
+      }else{
+        toast('Đã nhập vào thiết bị; Cloud chưa đồng bộ được. Hãy thử Đồng bộ Cloud ngay');
+      }
+      if(document.getElementById('autoBackupModal')?.classList.contains('show'))openAutoBackups();
+    }catch(e){
+      reset();
+      if(e&&e.message==='wrong_app')toast('File không thuộc TT Bảng chấm công');
+      else if(e&&e.message==='backup_current_failed')toast('Không thể tạo bản dự phòng dữ liệu hiện tại');
+      else toast('File sao lưu không hợp lệ hoặc bị lỗi');
+    }
   };
-  reader.onerror=function(){input.value='';toast('Không đọc được file')};
+  reader.onerror=function(){reset();toast('Không đọc được file sao lưu')};
   reader.readAsText(file);
 }
 function load(){let d=null;for(let k of [KEY,'TT_CC_V10','TT_CC_V9','TT_CC_V8','TT_CC_V7','TT_CC_V6']){try{d=JSON.parse(localStorage.getItem(k)||'null');if(d)break}catch(e){}}let x={workshops:[],records:{}};if(d&&Array.isArray(d.workshops)){x.workshops=d.workshops.map(w=>({...w,id:w.id||uid(),name:w.name||'Xưởng',lx:Number(w.lx??w.pay)||0,ct:Number(w.ct??0)||0,ot:Number(w.ot??0)||0,notes:Array.isArray(w.notes)?w.notes:(w.note?[{id:'n_old',text:String(w.note),createdAt:''}]:[])}));Object.keys(d.records||{}).forEach(k=>{let r=d.records[k]||{};x.records[k]={...r,otMorning:Number(r.otMorning||0),otEvening:Number(r.otEvening||0),otRate:Number(r.otRate||0)}})}else{x.workshops=[{id:uid(),name:'Xưởng 1',lx:0,ct:0,ot:0}]};return normalize(x)}
