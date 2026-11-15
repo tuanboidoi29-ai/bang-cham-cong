@@ -173,7 +173,7 @@ function importBackup(input){
   const file=input&&input.files&&input.files[0];if(!file)return;
   const reset=function(){if(input)input.value=''};
   if(file.size>25*1024*1024){reset();return toast('File quá lớn (tối đa 25 MB)')}
-  if(!/\\.json$/i.test(file.name)&&file.type!=='application/json'){reset();return toast('Vui lòng chọn file sao lưu .json')}
+  if(!/\.json$/i.test(file.name)&&file.type!=='application/json'){reset();return toast('Vui lòng chọn file sao lưu .json')}
   const reader=new FileReader();
   reader.onload=async function(){
     try{
